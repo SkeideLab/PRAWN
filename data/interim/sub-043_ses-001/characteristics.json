@@ -1,0 +1,65 @@
+{
+    "ratings": {
+        "rater_ids": [
+            2,
+            3
+        ],
+        "soerensen_dice": 0.9560632688927944,
+        "n_ratings": 369
+    },
+    "n_trials": {
+        "before video coding": 369,
+        "after video coding": 297
+    },
+    "event_counts": {
+        "human1": 72,
+        "human2": 78,
+        "monkey1": 78,
+        "monkey2": 69
+    },
+    "cv-folds": 5,
+    "ICA EOG n components": 3,
+    "robust average": {
+        "noisy_channels_before_interpolation": {
+            "bad_by_nan": [],
+            "bad_by_flat": [],
+            "bad_by_deviation": [],
+            "bad_by_hf_noise": [],
+            "bad_by_correlation": [
+                "TP10"
+            ],
+            "bad_by_SNR": [],
+            "bad_by_dropout": [],
+            "bad_by_ransac": [
+                "Fz",
+                "F3",
+                "FC5",
+                "T8"
+            ],
+            "bad_all": [
+                "FC5",
+                "F3",
+                "T8",
+                "Fz",
+                "TP10"
+            ]
+        },
+        "noisy_channels_after_interpolation": {
+            "bad_by_nan": [],
+            "bad_by_flat": [],
+            "bad_by_deviation": [],
+            "bad_by_hf_noise": [],
+            "bad_by_correlation": [],
+            "bad_by_SNR": [],
+            "bad_by_dropout": [],
+            "bad_by_ransac": [
+                "TP9",
+                "P3"
+            ],
+            "bad_all": [
+                "P3",
+                "TP9"
+            ]
+        }
+    }
+}

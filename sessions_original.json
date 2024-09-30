@@ -1,0 +1,247 @@
+{
+    "allsessions": [
+
+        "sub-001_ses-001",
+        
+        "sub-002_ses-001",
+        "sub-002_ses-002",
+        
+        "sub-003_ses-001",
+        "sub-003_ses-002",
+        
+        "sub-004_ses-001",
+        "sub-004_ses-002",
+        
+        "sub-005_ses-001",
+        
+        "sub-006_ses-001",
+        "sub-006_ses-002",
+        
+        "sub-007_ses-001",
+        
+        "sub-008_ses-001",
+        "sub-008_ses-002",
+        
+        "sub-009_ses-001",
+        "sub-009_ses-002",
+        
+        "sub-010_ses-001",
+        "sub-010_ses-002",
+        
+        "sub-011_ses-001",
+        "sub-011_ses-002",
+        
+        "sub-012_ses-001",
+        "sub-012_ses-002",
+        
+        "sub-013_ses-001",
+        "sub-013_ses-002",
+        
+        "sub-014_ses-001",
+        "sub-014_ses-002",
+        
+        "sub-015_ses-001",
+        "sub-015_ses-002",
+        
+        "sub-016_ses-001",
+                
+        "sub-017_ses-001",
+        "sub-017_ses-002",
+
+
+        "sub-019_ses-001",
+        
+        "sub-020_ses-001",
+        "sub-020_ses-002",
+        
+        "sub-021_ses-001",
+        "sub-021_ses-002",
+        
+        "sub-022_ses-001",
+        "sub-022_ses-002",
+        
+        "sub-023_ses-001",
+        "sub-023_ses-002",
+        
+        "sub-024_ses-001",
+        "sub-024_ses-002",
+        
+        "sub-025_ses-001",
+        "sub-025_ses-002",
+        
+        "sub-026_ses-001",
+        "sub-026_ses-002",     
+ 
+        
+        "sub-028_ses-001",
+        "sub-028_ses-002",
+
+        "sub-029_ses-001",
+        "sub-029_ses-002",
+        
+        "sub-030_ses-001",
+        "sub-030_ses-002",
+        
+        "sub-031_ses-001",
+        "sub-031_ses-002",
+        
+        "sub-032_ses-001",
+        "sub-032_ses-002",
+        
+        "sub-033_ses-001",
+        "sub-033_ses-002",
+        
+        "sub-034_ses-001",
+        "sub-034_ses-002",
+        
+        "sub-035_ses-001",
+        "sub-035_ses-002",
+        
+        "sub-036_ses-001",
+        "sub-036_ses-002",
+        
+        "sub-037_ses-001",
+        "sub-037_ses-002",
+        
+        "sub-038_ses-001",
+        "sub-038_ses-002",
+        
+        "sub-039_ses-001",
+        "sub-039_ses-002",
+        
+        "sub-040_ses-001",
+        "sub-040_ses-002",
+        
+        "sub-041_ses-001",
+        "sub-041_ses-002",
+        
+        "sub-042_ses-001",
+        "sub-042_ses-002",
+        
+        "sub-043_ses-001",
+        "sub-043_ses-002",
+
+        "sub-044_ses-001",        
+        "sub-044_ses-002"
+
+    ],
+
+    "allsessions_prediction": [
+        
+        "sub-001_ses-001",
+        
+        "sub-002_ses-001",
+        "sub-002_ses-002",
+        
+        "sub-003_ses-001",
+        "sub-003_ses-002",
+        
+        "sub-004_ses-001",
+        "sub-004_ses-002",
+        
+        "sub-005_ses-001",
+        
+        "sub-006_ses-001",
+        "sub-006_ses-002",
+        
+        "sub-007_ses-001",
+        
+        "sub-008_ses-001",
+        "sub-008_ses-002",
+        
+        "sub-009_ses-001",
+        "sub-009_ses-002",
+        
+        "sub-010_ses-001",
+        "sub-010_ses-002",
+        
+        
+        "sub-012_ses-001",
+        "sub-012_ses-002",
+        
+        "sub-013_ses-001",
+        "sub-013_ses-002",
+        
+        "sub-014_ses-001",
+        "sub-014_ses-002",
+        
+        "sub-015_ses-001",
+        "sub-015_ses-002",
+        
+        "sub-016_ses-001",
+                
+        "sub-017_ses-001",
+        "sub-017_ses-002",
+
+
+        "sub-019_ses-001",
+        
+        "sub-020_ses-001",
+        "sub-020_ses-002",
+        
+        "sub-021_ses-001",
+        "sub-021_ses-002",
+        
+        "sub-022_ses-001",
+        "sub-022_ses-002",
+        
+        "sub-023_ses-001",
+        "sub-023_ses-002",
+        
+        "sub-024_ses-001",
+        "sub-024_ses-002",
+        
+        "sub-025_ses-001",
+        "sub-025_ses-002",
+        
+        "sub-026_ses-001",
+        "sub-026_ses-002",     
+ 
+        
+        "sub-028_ses-001",
+        "sub-028_ses-002",
+
+        
+        "sub-030_ses-001",
+        "sub-030_ses-002",
+        
+        
+        "sub-032_ses-001",
+        "sub-032_ses-002",
+        
+        "sub-033_ses-001",
+        "sub-033_ses-002",
+        
+        "sub-034_ses-001",
+        "sub-034_ses-002",
+        
+        "sub-035_ses-001",
+        "sub-035_ses-002",
+        
+        "sub-036_ses-001",
+        "sub-036_ses-002",
+        
+        
+        "sub-038_ses-001",
+        "sub-038_ses-002",
+        
+        "sub-039_ses-001",
+        "sub-039_ses-002",
+        
+        "sub-040_ses-001",
+        "sub-040_ses-002",
+        
+        "sub-041_ses-001",
+        "sub-041_ses-002",
+        
+        "sub-042_ses-001",
+        "sub-042_ses-002",
+        
+        "sub-043_ses-001",
+        "sub-043_ses-002",
+
+        "sub-044_ses-001",        
+        "sub-044_ses-002"
+
+    ]
+}

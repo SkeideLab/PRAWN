@@ -1,0 +1,99 @@
+{
+    "ratings": {
+        "rater_ids": [
+            2,
+            3
+        ],
+        "soerensen_dice": 0.8879310344827587,
+        "n_ratings": 480
+    },
+    "n_trials": {
+        "before video coding": 305,
+        "after video coding": 147
+    },
+    "event_counts": {
+        "human1": 39,
+        "human2": 33,
+        "monkey1": 37,
+        "monkey2": 38
+    },
+    "cv-folds": 5,
+    "ICA EOG n components": 3,
+    "robust average": {
+        "noisy_channels_before_interpolation": {
+            "bad_by_nan": [],
+            "bad_by_flat": [],
+            "bad_by_deviation": [
+                "O1",
+                "Oz"
+            ],
+            "bad_by_hf_noise": [
+                "O1",
+                "O2",
+                "P4",
+                "Oz"
+            ],
+            "bad_by_correlation": [
+                "O1",
+                "O2",
+                "P4",
+                "Oz"
+            ],
+            "bad_by_SNR": [
+                "O1",
+                "P4",
+                "Oz",
+                "O2"
+            ],
+            "bad_by_dropout": [],
+            "bad_by_ransac": [
+                "Fz",
+                "POz",
+                "T7",
+                "TP9",
+                "Pz",
+                "F10",
+                "CP4"
+            ],
+            "bad_all": [
+                "F10",
+                "TP9",
+                "Pz",
+                "T7",
+                "P4",
+                "Oz",
+                "O2",
+                "POz",
+                "CP4",
+                "O1",
+                "Fz"
+            ]
+        },
+        "noisy_channels_after_interpolation": {
+            "bad_by_nan": [],
+            "bad_by_flat": [],
+            "bad_by_deviation": [],
+            "bad_by_hf_noise": [],
+            "bad_by_correlation": [
+                "Fp2"
+            ],
+            "bad_by_SNR": [],
+            "bad_by_dropout": [],
+            "bad_by_ransac": [
+                "Fz",
+                "F9",
+                "CP6",
+                "TP10",
+                "FC6"
+            ],
+            "bad_all": [
+                "Fp2",
+                "CP6",
+                "F9",
+                "FC6",
+                "TP10",
+                "Fz"
+            ]
+        }
+    }
+}

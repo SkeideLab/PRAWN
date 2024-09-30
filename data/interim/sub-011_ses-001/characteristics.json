@@ -1,0 +1,20 @@
+{
+    "ratings": {
+        "rater_ids": [
+            1,
+            2
+        ],
+        "soerensen_dice": 0.9103448275862069,
+        "n_ratings": 124
+    },
+    "n_trials": {
+        "before video coding": 124,
+        "after video coding": 79
+    },
+    "event_counts": {
+        "human1": 19,
+        "human2": 17,
+        "monkey1": 22,
+        "monkey2": 21
+    }
+}

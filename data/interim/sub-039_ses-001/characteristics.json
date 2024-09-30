@@ -1,0 +1,73 @@
+{
+    "ratings": {
+        "rater_ids": [
+            2,
+            4
+        ],
+        "soerensen_dice": 0.8357348703170029,
+        "n_ratings": 361
+    },
+    "n_trials": {
+        "before video coding": 361,
+        "after video coding": 202
+    },
+    "event_counts": {
+        "human1": 52,
+        "human2": 49,
+        "monkey1": 45,
+        "monkey2": 56
+    },
+    "cv-folds": 5,
+    "ICA EOG n components": 3,
+    "robust average": {
+        "noisy_channels_before_interpolation": {
+            "bad_by_nan": [],
+            "bad_by_flat": [],
+            "bad_by_deviation": [],
+            "bad_by_hf_noise": [],
+            "bad_by_correlation": [],
+            "bad_by_SNR": [],
+            "bad_by_dropout": [],
+            "bad_by_ransac": [
+                "Fz",
+                "POz",
+                "T7",
+                "CP6",
+                "TP10"
+            ],
+            "bad_all": [
+                "CP6",
+                "POz",
+                "TP10",
+                "T7",
+                "Fz"
+            ]
+        },
+        "noisy_channels_after_interpolation": {
+            "bad_by_nan": [],
+            "bad_by_flat": [],
+            "bad_by_deviation": [],
+            "bad_by_hf_noise": [],
+            "bad_by_correlation": [
+                "P7"
+            ],
+            "bad_by_SNR": [],
+            "bad_by_dropout": [],
+            "bad_by_ransac": [
+                "P3",
+                "TP10",
+                "T8",
+                "F4",
+                "CP3"
+            ],
+            "bad_all": [
+                "TP10",
+                "P3",
+                "CP3",
+                "P7",
+                "F4",
+                "T8"
+            ]
+        }
+    }
+}

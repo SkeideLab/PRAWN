@@ -1,0 +1,61 @@
+{
+    "ratings": {
+        "rater_ids": [
+            1,
+            2
+        ],
+        "soerensen_dice": 0.9639344262295082,
+        "n_ratings": 455
+    },
+    "n_trials": {
+        "before video coding": 456,
+        "after video coding": 316
+    },
+    "event_counts": {
+        "human1": 82,
+        "human2": 76,
+        "monkey1": 80,
+        "monkey2": 78
+    },
+    "cv-folds": 5,
+    "ICA EOG n components": 1,
+    "robust average": {
+        "noisy_channels_before_interpolation": {
+            "bad_by_nan": [],
+            "bad_by_flat": [],
+            "bad_by_deviation": [],
+            "bad_by_hf_noise": [],
+            "bad_by_correlation": [
+                "TP9",
+                "P4"
+            ],
+            "bad_by_SNR": [],
+            "bad_by_dropout": [],
+            "bad_by_ransac": [
+                "Fz",
+                "Pz"
+            ],
+            "bad_all": [
+                "Fz",
+                "P4",
+                "Pz",
+                "TP9"
+            ]
+        },
+        "noisy_channels_after_interpolation": {
+            "bad_by_nan": [],
+            "bad_by_flat": [],
+            "bad_by_deviation": [],
+            "bad_by_hf_noise": [],
+            "bad_by_correlation": [],
+            "bad_by_SNR": [],
+            "bad_by_dropout": [],
+            "bad_by_ransac": [
+                "T7"
+            ],
+            "bad_all": [
+                "T7"
+            ]
+        }
+    }
+}
