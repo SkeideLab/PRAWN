@@ -46,7 +46,7 @@ python src/postprocess_accuracies.py
 
 ## targets (R)
 
-The targets 
+The targets pipeline includes all remaining analyses. The project can be opened in RStudio. The *_targets* file needs to be sourced. Then, *tar_make()* produces all results (or re-runs all outdated nodes of the network).
 
 
 
