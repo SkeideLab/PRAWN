@@ -141,3 +141,29 @@ df = pd.concat(df)
 # TODO will be done in R, then more flexible
 
 df.to_csv(f"{dirs['model_dir']}eegnet.csv", index=False)
+
+
+""" accuracies per class (eegnet) """
+
+
+# only inter
+df = []
+for session in sessions:
+    species = "inter"
+    
+    # NEW: find the highest subset for session
+    files = sorted(glob(f"{dirs['model_dir']}{session}/braindecode/*_{species}_subclass_accuracies.pck"))
+    subset = np.max([int(os.path.basename(i).split('_')[0]) for i in files])
+    
+    d = pickle.load(open(f"{dirs['model_dir']}{session}/braindecode/{subset}_{species}_subclass_accuracies.pck", "rb"))    
+    
+    dfi = pd.DataFrame({
+        "class": ["h1", "h2", "m1", "m2"],
+        "accuracy": list(d.values())
+    })
+    dfi['session'] = session
+    df.append(dfi)    
+
+df = pd.concat(df)
+df.to_csv(f"{dirs['model_dir']}eegnet_subclass_acc.csv", index=False)
+
