@@ -8,3 +8,5 @@
 # logs
 logs/*
 
+.Rproj.user
+.Rproj.user

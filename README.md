@@ -38,4 +38,15 @@ Postprocessing of
 python src/postprocess_accuracies.py
 ```
 
+## Notebooks with one-off analyses
+
+*demographics.ipynb* will just output the demographic information for the manuscript
+*dnn_sitmulus_representation.ipynb* is quick-and-dirty analysis of stimulus embeddings
+*interpret_timeresolved.ipynb* does a group analysis for the model interpretation of the time resolved decoding 
+
+## targets (R)
+
+The targets 
+
+
 

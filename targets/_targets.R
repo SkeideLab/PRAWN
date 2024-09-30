@@ -1,0 +1,580 @@
+# Created by use_targets().
+# Follow the comments below to fill in this target script.
+# Then follow the manual to check and run the pipeline:
+#   https://books.ropensci.org/targets/walkthrough.html#inspect-the-pipeline
+
+# Load packages required to define the pipeline:
+library(targets)
+library(tarchetypes) # Load other packages as needed.
+
+# Set target options:
+tar_option_set(
+  packages = c("dplyr", 
+               "magrittr",
+               "ggplot2", 
+               "ggpubr",
+               "grid", # to use rasterplot
+               "png",
+               "readr",
+               "permuco") # packages that your targets use
+  # format = "qs", # Optionally set the default storage format. qs is fast.
+)
+
+# Run the R scripts in the R/ folder with your custom functions:
+tar_source()
+# tar_source("other_functions.R") # Source other scripts as needed.
+
+tar_option_set() # to be able to skip targets?
+
+mycolors = c("#656364",
+             "#332288", #  "#004949", #darkgreen
+             "#882155"
+)
+
+# derived from https://www.jantau.com/post/sparplantag-reloaded/
+# colorblind friendlyness tested using https://davidmathlogic.com/colorblind/#%23D81B60-%231E88E5-%23FFC107-%23004D40-%23792427-%23D1BDA2-%2354828E
+# it is from library(gameofthrones) (not compatible with this R version)
+# https://github.com/aljrico/gameofthrones
+# pal <- got(3, option = "Daenerys", direction = -1)
+# or: scale_fill_got_d(option = "Daenerys", direction = -1)
+# 
+rkcolors  = c("#54828e",
+              "#d1bda2",
+              "#792427")
+
+petroff_colors = c("#5790fc", "#f89c20", "#e42536", "#964a8b", "#9c9ca1", "#7a21dd")
+
+# Replace the target list below with your own:
+list(
+
+  tar_target(
+    name = tr_file2,
+    command = "../models/timeresolved.csv",
+    format = "file",
+    description = "timeresolved timeseries data file" 
+  ),
+  
+  # tr
+  tar_target(
+    name = tr_data,
+    command = read.csv(tr_file2),
+    description = "timeresolved timeseries data" 
+  ),
+  # manual group by
+  tar_target(name = tr_data_inter, command = tr_data %>% subset(species=="inter") %>% select(-c(species))),
+  tar_target(name = tr_data_intra_human, command = tr_data %>% subset(species=="intra_human") %>% select(-c(species))),
+  tar_target(name = tr_data_intra_monkey, command = tr_data %>% subset(species=="intra_monkey") %>% select(-c(species))),
+  tar_target(name = tr_data_con, 
+             command = list(tr_data_inter, tr_data_intra_human, tr_data_intra_monkey),
+             iteration = "list"),
+  
+  
+  # load the images for plotting
+  tar_target(
+    name = human_image_file,
+    command = "../plots/stimuli/humans.png",
+    format = "file",
+    description = "human image file" 
+  ),
+  tar_target(
+    name = monkey_image_file,
+    command = "../plots/stimuli/monkeys.png",
+    format = "file",
+    description = "monkey image file" 
+  ),
+  tar_target(
+    name = both_image_file,
+    command = "../plots/stimuli/both.png",
+    format = "file",
+    description = "human and monkey image file" 
+  ),
+  tar_target(
+    name = human_image,
+    command = readPNG(human_image_file),
+    description = "human image" 
+  ),
+  tar_target(
+    name = monkey_image,
+    command = readPNG(monkey_image_file),
+    description = "monkey image" 
+  ),
+  tar_target(
+    name = both_image,
+    command = readPNG(both_image_file),
+    description = "both image" 
+  ),
+  tar_target(name = stimulus_images, 
+             command = list(both_image, human_image, monkey_image),
+             iteration = "list"),
+  
+  
+  # group by contrast
+  #tar_group_by(
+  #  name = tr_data_con, # contrast (inter, intra_human, intra_monkey) 
+  #  tr_data, 
+  #  species,
+  #),    
+  
+  tar_target(
+    name = tr_permutations,
+    command = sign_flip(tr_data_con),
+    pattern = map(tr_data_con),
+    iteration="list",
+    description = "timeresolved sign flipped permutation time series" 
+  ),
+  
+  tar_target(
+    name = clustermass,
+    command = {
+      cm <- compute_clustermass(tr_permutations, 
+                                  threshold=0.01,
+                                  aggr_FUN=sum, 
+                                  alternative = "greater")
+      cm$main[,"pvalue"]
+    },
+    pattern = map(tr_permutations),
+    iteration="list",
+    description = "cluster mass test" 
+  ),
+  tar_target(
+    name = clusterdepth,
+    command = {
+      cd <- compute_clusterdepth(tr_permutations,
+                                 threshold=0.01,
+                                 alternative="greater")
+      cd$main[,"pvalue"]
+      },
+    pattern = map(tr_permutations),
+    iteration="list",
+    description = "cluster depth test" 
+  ),
+  
+  tar_target(
+    name = tr_se,
+    command = {
+      
+      # Calculate the mean for each time point (row-wise mean across participants)
+      mean_values <- apply(tr_data_con, 1, mean)
+      # Calculate the standard deviation for each time point (row-wise standard deviation across participants)
+      sd_values <- apply(tr_data_con, 1, sd)
+      # Number of participants (columns)
+      n_participants <- ncol(tr_data_con)
+      # Calculate the standard error of the mean for each time point
+      sem_values <- sd_values / sqrt(n_participants)
+      
+      # Combine the mean and SEM into a data frame for easy reference
+      result <- data.frame(times=seq(-0.4, 1.0, length.out = 351), 
+                           mean = mean_values, 
+                           sem = sem_values)
+    },
+    pattern = map(tr_data_con),
+    iteration="list",
+    description = "timeresolved compute standard error of time series" 
+  ),
+  
+  tar_target(
+   name = tr_results,
+   command = data.frame(times = seq(-0.4, 1.0, length.out = 351),
+                        accuracy = tr_permutations[1,] + 0.5,
+                        sem = tr_se$sem,
+                        ll = tr_permutations[1,] + 0.5 - tr_se$sem,
+                        ul = tr_permutations[1,] + 0.5 + tr_se$sem,
+                        pmass = clustermass,
+                        pdepth = clusterdepth
+                 ),
+   pattern = map(tr_permutations,clustermass,clusterdepth, tr_se),
+   iteration = "list",
+   description = "timeresolved results merged depth and mass"
+  ),
+  
+  # maximal y value for plotting
+  tar_target(tr_max_y_value, max(sapply(tr_results, function(df) max(df$ul)))),
+  tar_target(tr_min_y_value, min(sapply(tr_results, function(df) min(df$ll)))),
+  
+  # labels for plots
+  tar_target(labels, 
+             list("Face categorization", "Human face individuation", "Monkey face individuation"),
+             iteration = "list"),
+  
+  # plot
+  tar_target(
+    name = tr_plots,
+    command = {
+      offset = 0.5
+      
+      ggplot(data = tr_results, aes(x = times, y = accuracy)) +
+        
+
+        # SE of the mean
+        geom_ribbon(aes(ymin = accuracy - tr_se$sem, 
+                        ymax = accuracy + tr_se$sem, 
+                        #fill = "SEM" # To make it appear in the legend
+                        ),
+                    fill = "grey",
+                    alpha = 0.5) +  # Adjust fill color and transparency
+        
+        
+        geom_line(color = "black") +  # Line plot for times vs accuracy
+        
+        # Points for pmass < 0.05
+        geom_point(aes(y = -0.005 + offset, color = "Cluster: p < 0.05"),
+                   data = tr_results[!is.na(tr_results$pmass) & tr_results$pmass < 0.05,],
+                   size = 1) +
+        
+        # Points for pdepth < 0.05
+        geom_point(aes(y = -0.010 + offset, color = "Time point: p < 0.05"),
+                   data = tr_results[!is.na(tr_results$pdepth) & tr_results$pdepth < 0.05,],
+                   size = 1) +
+        
+        scale_color_manual(values = c("Cluster: p < 0.05" = rkcolors[1], ##7570b3
+                                      "Time point: p < 0.05" = rkcolors[3])) +  # #1b9e77
+        
+        # if i want to appear it in the legend
+        #scale_fill_manual(values = c("SEM" = rkcolors[2])) +  # Color for SEM with label
+        
+        
+        #theme_minimal() +
+        labs(x = "Time (s)", y = "Accuracy", title = labels) + #, color = ""
+        #labs(x = "Time | s", y = "Accuracy", title = "Time-resolved Accuracy (Human vs. Monkey)", color = "Significant Decoding") +
+        
+        #ylim(min(pdata$accuracy, -0.022), max(pdata$accuracy)) +
+        geom_vline(xintercept = 0, linetype="dashed", color="black") +
+        geom_hline(yintercept = 0 + offset, linetype="dashed", color="black") +
+        
+        # xticks
+        scale_x_continuous(breaks=c(-0.4,-0.2,0.0,0.2,0.4,0.6,0.8,1.0)) +
+        
+        theme_light() +
+        
+        # legend within plot
+        # The coordinates for legend.position are x- and y- offsets from the bottom-left of the plot, ranging from 0 - 1.
+        theme(strip.text.x = element_blank(),
+              #strip.background = element_rect(colour="black", fill="grey"),
+              legend.background = element_rect(colour="black", fill="white"),
+              legend.position=c(0.15,0.1),
+              legend.title = element_blank(), # remove legend title
+        ) +
+        lims(y = c(min(0.485,tr_min_y_value), tr_max_y_value))
+      
+    },
+    pattern = map(tr_results, labels, tr_se),
+    iteration = "list",
+    description = "timeresolved results plot"
+  ),
+  
+  tar_target(
+    name = tr_plot,
+    command = {
+      ggarrange(plotlist = tr_plots,
+                labels = c("A", "B", "C"),
+                ncol = 1, nrow = 3
+                #common.legend = TRUE,
+                #legend.grob = get_legend(tr_plots[[1]])
+                )
+                
+    },
+    description = "merged timeresolved results plots"
+  ),
+  
+  tar_target(
+    name = tr_plot_save,
+    command = ggsave(tr_plot, filename = "../plots/tr_plot.png", 
+                     width = 18, height = 12, units = "cm", dpi = 300, scale=1.2,
+                     bg="white"),
+    description = "save timeresolved results plot"
+  ),
+  
+  # stimulus image plot, to be merged with tr-plot
+  tar_target(
+    name = stim_plot_vertical,
+    command = {
+      ggarrange(plotlist = lapply(stimulus_images,
+                                  function(img) grid::rasterGrob(img)),
+                ncol = 1, nrow = 3)
+    },
+    description = "stimulus images plot"
+  ),
+  tar_target(
+    name = stim_plot_horizontal,
+    command = {
+      ggarrange(plotlist = lapply(stimulus_images,
+                                  function(img) grid::rasterGrob(img)),
+                ncol = 3, nrow = 1)
+    },
+    description = "stimulus images plot"
+  ),
+
+  # merged time resolved plot and stimulus images
+  tar_target(
+    name = tr_plot_w_stim,
+    command = {
+      #tar_skip(TRUE)
+      ggarrange(
+        tr_plot,
+        stim_plot_vertical,
+        ncol = 2, nrow = 1, widths = c(0.8, 0.2)  # Set the relative column widths (80% and 20%)
+      )
+    },
+    description = "merged time resolved plot and stimulus images"
+  ),
+  # save
+  tar_target(
+    name = tr_plot_w_stim_save,
+    command = {
+      #tar_skip(TRUE)
+      ggsave(tr_plot_w_stim, filename = "../plots/tr_plot_w_stim.png", 
+                     width = 18, height = 12, units = "cm", dpi = 300, scale=1.2,
+                     bg="white")
+      },
+    description = "save timeresolved results plot with stimulus"
+  ),    
+  
+  #### EEGNET results
+  
+  tar_target(
+    name = en_file2,
+    command = "../models/eegnet.csv",
+    format = "file",
+    description = "eegnet accuracies raw data file" # requires development targets >= 1.5.0.9001: remotes::install_github("ropensci/targets")
+  ),
+  
+  tar_target(
+    name = en_data,
+    command = {
+      read_csv(en_file2) %>%
+        # rename session to participant
+        rename(participant = session) %>%
+        group_by(context) %>%  # Group by the 'subset' column
+        mutate(p_fdr = p.adjust(p_uncorrected, method = "BH")) %>%  # Apply BH correction
+        ungroup() %>%  # Ungroup to finish
+        mutate(significance = ifelse(p_fdr < 0.05, "p < 0.05", "n.s."))
+        
+      },
+    description = "eegnet accuracies data"
+  ),
+  
+  tar_group_by(
+    en_data_con,
+    en_data,
+    context,
+    description = "eegnet accuracies data grouped"
+  ),
+
+  # maximal y value for plotting
+  tar_target(en_max_y_value, max(max(en_data$accuracy), max(en_data$ul))),
+  tar_target(en_min_y_value, min(min(en_data$accuracy), min(en_data$ll))),
+  
+  # barplots of accuracies across sessions, black for some with p>0.05, darkred for p<0.05
+  tar_target(
+    name = en_plots,
+    command = {
+      p <- ggplot(data = en_data_con, 
+             aes(x = participant, y = accuracy, color = significance)) + #p_fdr < 0.05
+            #geom_bar(stat = "identity") +
+            #scale_fill_manual(values = c("black", "darkred")) +
+            
+            # Add error bar-like things for the underlying permutation distribution (from ll to ul)
+            #geom_errorbar(aes(ymin = ll, ymax = ul), width = 0.5, color = rkcolors[2]) +
+            geom_crossbar(aes(ymin = ll, ymax = ul),
+                          color="grey", #rkcolors[2],
+                          width = 0.0, #0.2, 0 because this is an additional bar that is added to the lollipop  # Adjust width to change the thickness of the bar
+                          size = 1.5) + # Adjust thickness with size, this is the large bar
+            
+        
+        
+            # lollypop
+            geom_point(size = 2) +
+            scale_color_manual(values = c("black", rkcolors[3])) +
+            geom_segment(aes(x=participant, 
+                             xend=participant, 
+                             y=0.5, 
+                             yend=accuracy)) + 
+            
+        
+            labs(x = "Participant", y = "Accuracy", title = labels) +
+            lims(y = c(en_min_y_value, en_max_y_value)) +
+            
+        
+            theme_light() +
+        
+            theme(#strip.text.x = element_blank(),
+                  strip.background = element_rect(colour="white", fill="white"),
+                  legend.position=c(0.75,0.90),
+                  legend.title = element_blank(), # remove legend title
+                  axis.text.x = element_blank()
+                    #element_text(angle = 90, size=8, vjust = 0)
+        )
+      if (labels != "Face categorization"){
+        p <- p + guides(color = "none")
+      } 
+      p
+    },
+    pattern = map(en_data_con, labels),
+    iteration = "list",
+    description = "eegnet accuracies plot"
+  ),
+  
+  tar_target(
+    name = en_plot,
+    command = {
+      ggarrange(plotlist = en_plots, # TODO does list work? 
+                labels = c("A", "B", "C"),
+                ncol = 3, nrow = 1
+                #common.legend = TRUE,
+                #legend.grob = get_legend(tr_plots[[1]])
+      )
+    },
+    description = "merged EEGNet results plots"
+  ),
+  
+  tar_target(
+    name = en_plot_save,
+    command = ggsave(en_plot, filename = "../plots/en_plot.png", 
+                     width = 18, height = 10, units = "cm", dpi = 300, scale=1.2,
+                     bg="white"),
+    description = "save EEGNet results plot"
+  ),
+  
+  # # merged eegnet plot and stimulus images
+  # tar_target(
+  #   name = en_plot_w_stim,
+  #   command = {
+  #     #tar_skip(TRUE)
+  #     ggarrange(
+  #       en_plot,
+  #       stim_plot_horizontal,
+  #       ncol = 1, nrow = 2, heights = c(0.8, 0.2)  # Set the relative column widths (80% and 20%)
+  #     )
+  #   },
+  #   description = "merged EEGNet plot and stimulus images"
+  # ),
+  # # save
+  # tar_target(
+  #   name = en_plot_w_stim_save,
+  #   command = {
+  #     #tar_skip(TRUE)
+  #     ggsave(en_plot_w_stim, filename = "../plots/en_plot_w_stim.png", 
+  #                    width = 18, height = 12, units = "cm", dpi = 300, scale=1.2, bg="white")
+  #   },
+  #   description = "save EEGNet results plot with stimulus"
+  # ),    
+  
+  #### Bayesian population prevalence -- https://github.com/robince/bayesian-prevalence
+  
+  tar_target(
+    name = bayes_prev,
+    command = {
+      # Bayesian prevalence inference is performed with three numbers: 
+      # k, the number of significant participants (e.g. sum of binary indicator
+      # variable)
+      # n, the number of participants in the sample
+      # alpha, the false positive rate
+      n <- length(unique(en_data_con$participant)) # n subs
+      alpha = 0.05  
+      signif <- en_data_con$p_uncorrected # TODO: check which correction to use
+      indsig = signif < alpha
+      k <- sum(indsig)
+      
+      # plot posterior distribution of population prevalence
+      xvals <- seq(0, 1, .01)
+      pdf <- bayesprev_posterior(xvals, k, n)
+      
+      # Add the MAP estimate as a point
+      xmap = bayesprev_map(k, n)
+      pmap = bayesprev_posterior(xmap, k, n)
+      
+      # Add the 0.95 HPDI
+      int = bayesprev_hpdi(0.95, k, n)
+      i1 = int[1]
+      i2 = int[2]
+      h1 = bayesprev_posterior(i1, k, n)
+      h2 = bayesprev_posterior(i2, k, n)
+      h <- min(h1, h2) # if the distribution is at the border, then we need to relevel h
+      
+      data <- data.frame(xvals, pdf)
+      # ggplot
+      ggplot(data, aes(x=xvals, y=pdf)) +
+        #aes_string(y = "pdf") +
+        geom_line(size=1.) +
+        # 0.95 HDPI
+        geom_segment(aes(x=i1, xend=i2, y=h, yend=h), col = rkcolors[1], lwd=1) + ##4e88b9
+        annotate("text", x = (i1 + i2) / 2, y = h, 
+                 label = paste0("[",round(i1,2),"; ",round(i2,2),"]"), 
+                 vjust = 1.6, col = rkcolors[1]) + #4e88b9
+        #MAP
+        geom_point(aes(x=xmap, y=h), cex = 4, col = rkcolors[3], pch = 16) + ##7c1b00
+        annotate("text", x = xmap, y = h, 
+                 label = round(xmap,2), 
+                 vjust = -1., hjust = +0.5, col = rkcolors[3]) + #7c1b00
+        # misc
+        labs(x = "Population prevalence", y = "Posterior density", title=labels)
+        #theme_minimal()
+      
+    },
+    pattern = map(en_data_con, labels),
+    iteration = "list",
+    description = "bayesian population prevalence estimation"
+  ),
+  
+  tar_target(
+    name = bp_plot,
+    command = {
+      ggarrange(plotlist = bayes_prev,
+                labels = c("A", "B", "C"),
+                ncol = 1, nrow = 3
+                #common.legend = TRUE,
+                #legend.grob = get_legend(tr_plots[[1]])
+      )
+    },
+    description = "merged bayesian prevalence plots"
+  ),
+  
+  tar_target(
+    name = pb_plot_save,
+    command = ggsave(bp_plot, filename = "../plots/bayesian_prevalence.png", 
+                     width = 12, height = 12, units = "cm", dpi = 300, scale=1.2,
+                     bg="white"),
+    description = "save bayesian prevalence plot"
+  ),
+  
+  ### demographics and trial count analyses
+  
+  tar_target(
+    name = demo_file,
+    command = "../data/demographics_trials_inclusions.csv",
+    format = "file",
+    description = "demographics trial counts and inclusion info file" 
+  ),
+  tar_target(
+    name = demo_data,
+    command = {
+      read.csv(demo_file) %>%
+        filter(incl_session=="True") %>%
+        select(-c(incl_session, incl_subject, invited, included, sub_ses_str, ses)) %>%
+        # group by sub, sum up trials, average age, take first of sex
+        group_by(sub) %>%
+        summarise(trials = sum(trials), 
+                  age = mean(age),
+                  sex = first(sex)) %>%
+        ungroup() %>%
+        mutate(sub = sprintf("sub-%03d", sub))
+    },
+    description = "demographics trial counts and inclusion info data" 
+  ),
+  
+  # correlate accuracy with n_trials
+  tar_target(
+    name = corr_trials,
+    command = {
+      data <- en_data_con %>%
+        left_join(demo_data, by = c("participant" = "sub")) %>%
+        select(accuracy, trials)
+      
+      cor.test(data$accuracy, data$trials, method="spearman")
+    },
+    pattern = map(en_data_con),
+    iteration = "list",
+    description = "correlation between EEGNet accuracy and number of trials"
+  )
+  
+)
