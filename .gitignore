@@ -1,0 +1,10 @@
+# raw eeg data
+**/*.eeg
+**/*.vhdr
+**/*.vmrk
+
+**/*.fif
+
+# logs
+logs/*
+
