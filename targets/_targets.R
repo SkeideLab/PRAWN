@@ -217,17 +217,17 @@ list(
         geom_line(color = "black") +  # Line plot for times vs accuracy
         
         # Points for pmass < 0.05
-        geom_point(aes(y = -0.005 + offset, color = "Cluster: p < 0.05"),
+        geom_point(aes(y = -0.005 + offset, color = "Cluster: p < 0.05 (FWER)"),
                    data = tr_results[!is.na(tr_results$pmass) & tr_results$pmass < 0.05,],
                    size = 1) +
         
         # Points for pdepth < 0.05
-        geom_point(aes(y = -0.010 + offset, color = "Time point: p < 0.05"),
+        geom_point(aes(y = -0.010 + offset, color = "Time point: p < 0.05 (FWER)"),
                    data = tr_results[!is.na(tr_results$pdepth) & tr_results$pdepth < 0.05,],
                    size = 1) +
         
-        scale_color_manual(values = c("Cluster: p < 0.05" = rkcolors[1], ##7570b3
-                                      "Time point: p < 0.05" = rkcolors[3])) +  # #1b9e77
+        scale_color_manual(values = c("Cluster: p < 0.05 (FWER)" = rkcolors[1], ##7570b3
+                                      "Time point: p < 0.05 (FWER)" = rkcolors[3])) +  # #1b9e77
         
         # if i want to appear it in the legend
         #scale_fill_manual(values = c("SEM" = rkcolors[2])) +  # Color for SEM with label
@@ -251,7 +251,7 @@ list(
         theme(strip.text.x = element_blank(),
               #strip.background = element_rect(colour="black", fill="grey"),
               legend.background = element_rect(colour="black", fill="white"),
-              legend.position=c(0.15,0.1),
+              legend.position=c(0.12,0.05),
               legend.title = element_blank(), # remove legend title
         ) +
         lims(y = c(min(0.485,tr_min_y_value), tr_max_y_value))
@@ -347,7 +347,7 @@ list(
         group_by(context) %>%  # Group by the 'subset' column
         mutate(p_fdr = p.adjust(p_uncorrected, method = "BH")) %>%  # Apply BH correction
         ungroup() %>%  # Ungroup to finish
-        mutate(significance = ifelse(p_fdr < 0.05, "p < 0.05", "n.s."))
+        mutate(significance = ifelse(p_fdr < 0.05, "p < 0.05 (FDR)", "n.s."))
         
       },
     description = "eegnet accuracies data"
@@ -398,8 +398,9 @@ list(
             theme_light() +
         
             theme(#strip.text.x = element_blank(),
-                  strip.background = element_rect(colour="white", fill="white"),
-                  legend.position=c(0.75,0.90),
+                  legend.background = element_rect(colour="black", fill="white"),
+                  #strip.background = element_rect(colour="white", fill="white"),
+                  legend.position=c(0.6,0.10),
                   legend.title = element_blank(), # remove legend title
                   axis.text.x = element_blank()
                     #element_text(angle = 90, size=8, vjust = 0)
@@ -417,7 +418,7 @@ list(
   tar_target(
     name = en_plot,
     command = {
-      ggarrange(plotlist = en_plots, # TODO does list work? 
+      ggarrange(plotlist = en_plots, 
                 labels = c("A", "B", "C"),
                 ncol = 3, nrow = 1
                 #common.legend = TRUE,
@@ -471,7 +472,7 @@ list(
       # alpha, the false positive rate
       n <- length(unique(en_data_con$participant)) # n subs
       alpha = 0.05  
-      signif <- en_data_con$p_uncorrected # TODO: check which correction to use
+      signif <- en_data_con$p_uncorrected 
       indsig = signif < alpha
       k <- sum(indsig)
       
@@ -507,7 +508,12 @@ list(
                  label = round(xmap,2), 
                  vjust = -1., hjust = +0.5, col = rkcolors[3]) + #7c1b00
         # misc
-        labs(x = "Population prevalence", y = "Posterior density", title=labels)
+        labs(x = "Population prevalence", y = "Posterior density", title=labels) +
+        
+        # in case of low y value, this is necessary to avoid cutting the text of the HDI
+        lims(x = c(0, 1), y = c(-2, max(pdf)))
+        #geom_hline(yintercept = 0, col = "black", lwd = 0.5)
+        
         #theme_minimal()
       
     },
@@ -562,6 +568,13 @@ list(
     description = "demographics trial counts and inclusion info data" 
   ),
   
+  # save into csv
+  tar_target(
+    name = demo_data_save,
+    command = write.csv(demo_data, "../data/demo_trials_concise.csv", row.names = FALSE),
+    description = "save demographics trial counts and inclusion info data"
+  ),
+  
   # correlate accuracy with n_trials
   tar_target(
     name = corr_trials,
@@ -575,6 +588,88 @@ list(
     pattern = map(en_data_con),
     iteration = "list",
     description = "correlation between EEGNet accuracy and number of trials"
+  ),
+  
+  # properties of the trials
+  tar_target(
+    name = trial_props,
+    command = {
+      mean <- mean(demo_data$trials)
+      median <- median(demo_data$trials)
+      sd <- sd(demo_data$trials)
+      min <- min(demo_data$trials)
+      max <- max(demo_data$trials)
+      print(paste("mean:", mean, "median:", median, "sd:", sd, "min:", min, "max:", max))
+    }
+  ),
+  
+  ### accuracies per subclass in the EEGNet - inter contrast
+  
+  tar_target(
+    name = acc_subclass_file,
+    command = "../models/eegnet_subclass_acc.csv",
+    format = "file",
+    description = "EEGNet subclass accuracies file"
+  ),
+  
+  tar_target(
+    name = acc_subclass_data,
+    command = {
+      read.csv(acc_subclass_file) %>%
+        # replace h1, h2, m1, m2 in col class with human1, human2, monkey1, monkey2
+        mutate(class = gsub("h1", "human1", class),
+               class = gsub("h2", "human2", class),
+               class = gsub("m1", "monkey1", class),
+               class = gsub("m2", "monkey2", class))
+    },
+    description = "EEGNet subclass accuracies data"
+  ),
+  
+  tar_target(
+    name = acc_subclass_stats,
+    command = {
+      pairwise_results <- pairwise.t.test(acc_subclass_data$accuracy,
+                                          g=acc_subclass_data$class,
+                                          paired = TRUE, 
+                                          alternative = "two.sided",
+                                          p.adjust.method = "BH")
+        
+    },
+    description = "EEGNet subclass accuracies statistics"
+  ),
+  
+  tar_target(
+    name = acc_subclass_plot,
+    command = {
+      ggplot(acc_subclass_data, 
+             aes(x = class, y = accuracy)) +
+        #geom_bar(stat="identity", fill = rkcolors[1]) +
+        geom_boxplot(notch = TRUE, fill="lightgrey") + # fill = rkcolors[1], 
+        
+        # Add points for each accuracy value
+        #geom_point(aes(color = session), size = 3, alpha = 0.6) +
+        # Add lines connecting paired data points for each session
+        geom_line(aes(group = session, color = session), alpha = 0.6) +
+        
+        labs(x = "Subclass", y = "Accuracy") + #, title = "EEGNet subclass accuracies") +
+        theme_minimal() +
+        geom_hline(yintercept = 0.5, linetype="dashed", color = "black", size=1.5) +
+        
+        # remove legend, must be after all "geom" layers
+        theme(legend.position = "none")
+        
+    },
+    description = "EEGNet subclass accuracies plot"
+  ),
+  
+  tar_target(
+    name = acc_subclass_save,
+    command = ggsave(acc_subclass_plot, filename = "../plots/eegnet_subclass_acc.png", 
+                     width = 12, height = 12, units = "cm", dpi = 300, scale=1.2,
+                     bg="white"),
+    description = "save EEGNet subclass accuracies plot"
   )
+    
+  
   
 )
