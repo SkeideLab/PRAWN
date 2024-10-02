@@ -7,7 +7,7 @@
 #SBATCH --nodes=1             # request a full node
 #SBATCH --ntasks-per-node=1   # only start 1 task via srun because Python multiprocessing starts more tasks internally
 #SBATCH --cpus-per-task=72 # was 40    # assign all the cores to that first task to make room for multithreading
-#SBATCH --time=01:00:00 
+#SBATCH --time=24:00:00 
 #SBATCH --mail-user=kessler@cbs.mpg.de
 #SBATCH --mail-type=ALL
 ##SBATCH --mem=256GB
