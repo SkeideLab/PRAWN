@@ -5,29 +5,32 @@ Paper: *Electrophysiological decoding captures the temporal trajectory of face c
 **Roman Kessler** & **Michael A. Skeide**
 
 
+The raw data can be downloaded at https://doi.org/10.5281/zenodo.13881207.
+
+
 ## Setup
 
 The conda environment is saved in folder *env*. All python/bash/slurm scripts are found in *src*.
 The *R/targets* environment and all related processing scripts are found in *targets*.
 
 
-## Computationally intensive steps: preprocessing, and machine learning
+## Preprocessing, and machine learning
 
-On a Cluster with SLURM job scheduling system
+Run on a cluster with SLURM job scheduling system.
 
-Preprocessing (starts one job per participant)
+Preprocessing (starts one job per participant):
 
 ```bash
 bash src/run_preprocess.sh
 ```
 
-Time-resolved decoding (starts one job per participant), incl. interpretation
+Time-resolved decoding (starts one job per participant), incl. interpretation:
 
 ```bash
 bash src/run_predictions_timeresolved_merge.sh
 ```
 
-EEGNet decoding (starts one job per participant and contrast) - up to 1 day per participant and node. Make sure to set appropriate time limit in *run_prediction.slurm*,
+EEGNet decoding (starts one job per participant and contrast) - up to 1 day per participant and node. Make sure to set appropriate time limit in *run_prediction.slurm*.
 
 ```bash
 bash src/run_predictions_braindecode_merge.sh
@@ -44,9 +47,9 @@ python src/postprocess_accuracies.py
 
 ## Jupyter notebooks with adhoc analyses
 
-*demographics.ipynb* will just output the demographic information for the manuscript
-*dnn_sitmulus_representation.ipynb* is quick-and-dirty analysis of stimulus embeddings
-*interpret_timeresolved.ipynb* does a group analysis for the model interpretation of the time resolved decoding 
+- *demographics.ipynb* will output the demographic information for the manuscript
+- *dnn_sitmulus_representation.ipynb* is an analysis of stimulus embeddings
+- *interpret_timeresolved.ipynb* does a group analysis for the model interpretation of the time resolved decoding (Fig. 2) 
 
 ## targets (R) - statistics and vizualization
 

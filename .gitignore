@@ -8,5 +8,8 @@
 # logs
 logs/*
 
+submit
+zenodo
+
 .Rproj.user
 .Rproj.user
