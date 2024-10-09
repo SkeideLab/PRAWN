@@ -7,7 +7,7 @@ Paper: *Electrophysiological decoding captures the temporal trajectory of face c
 
 When using, please cite:
 
-- Kessler, R., & Skeide, M. A. (2024) - Electrophysiological decoding captures the temporal trajectory of face categorization in infants. Bioarxiv.
+- Kessler, R., & Skeide, M. A. (2024). Electrophysiological decoding captures the temporal trajectory of face categorization in infants. bioRxiv. https://doi.org/10.1101/2024.10.07.617144
   
 - Kessler, R., & Skeide, M. A. (2024). EEG Dataset of 38 Infants (Aged 5-11 Months) Viewing Human and Monkey Faces (Two Identities Each) (1.0) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.13881206
 
