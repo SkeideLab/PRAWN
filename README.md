@@ -90,7 +90,7 @@ python src/postprocess_accuracies.py
 
 :hourglass_flowing_sand: 10 minutes
 
-The targets pipeline includes all remaining analyses and outputs all plots. Other numbers are written in the respective processing nodes. The project can be opened in RStudio. The *_targets* file needs to be sourced. Then, *tar_make()* produces all results or re-runs all outdated nodes of the network.
+The targets pipeline includes all remaining analyses and outputs all plots. Other numbers are written in the respective processing nodes. The project can be opened in RStudio. The *_targets.R* file needs to be sourced. Then, ```tar_make()``` produces all results or re-runs all outdated nodes of the network.
 
 
 # License
