@@ -6,3 +6,4 @@
 -   Triggers were recoded
 -   Technical problems during EEG recording sometimes lead to several recording files per session. These were unified here.
 - Processed contains the preprocessed epochs to be used for ML
+- Ratings contain the trial-wise ratings of two raters, describing if a participant attended the screen for a particular trial or not
