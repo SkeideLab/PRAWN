@@ -44,6 +44,7 @@ For all scripts, adjust the paths depending on your environment.
 Run the following on a HPC cluster with *SLURM* job scheduling system.
 
 Preprocessing (starts one job per participant and session):
+
 :hourglass_flowing_sand: 10 minutes per session
 
 ```bash
