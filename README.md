@@ -19,33 +19,46 @@ The raw data can be downloaded at https://doi.org/10.5281/zenodo.13881207.
 
 The conda environment is saved in folder [env](/env). All python/bash/slurm scripts are found in [src](/src).
 
+To create the conda environment use
+
+```
+conda env create -f environment.yml
+```
+
 The system architecture and hardware details of the HPC used for all *Python* and *Bash* scripts  with *SLURM* job scheduling system can be found in [MPCDF RAVEN user guide](https://docs.mpcdf.mpg.de/doc/computing/raven-details.html).
 
 The *R* environment, which is used in a *targets* pipeline and all related processing scripts are found in [targets](/targets).
 
-The system architecture and hardware details of the Mac used to process the *targets* pipeline in *R* can be found [here](https://support.apple.com/en-us/111893). A 16 GB RAM version was used.
+```
+packages <-c("dplyr", "magrittr", "ggplot2", "ggpubr", "grid", "png", "reader", "permuco")
+install.packages(packages)
+```
 
+The system architecture and hardware details of the Mac used to process the *targets* pipeline in *R* can be found [here](https://support.apple.com/en-us/111893). A 16 GB RAM version was used.
 
 
 
 ## Preprocessing, and machine learning
 
 For all scripts, adjust the paths depending on your environment.
-Run the following on a HPC cluster with SLURM job scheduling system.
+Run the following on a HPC cluster with *SLURM* job scheduling system.
 
-Preprocessing (starts one job per participant):
+Preprocessing (starts one job per participant and session):
+:hourglass_flowing_sand: 10 minutes per session
 
 ```bash
 bash src/run_preprocess.sh
 ```
 
 Time-resolved decoding (starts one job per participant), incl. interpretation:
+:hourglass_flowing_sand: <=10 hours per participant
 
 ```bash
 bash src/run_predictions_timeresolved_merge.sh
 ```
 
-EEGNet decoding (starts one job per participant and contrast) - up to 1 day per participant and node. Make sure to set appropriate time limit in *run_prediction.slurm*.
+EEGNet decoding (starts one job per participant and contrast). 
+:hourglass_flowing_sand: <=24 hours per participant and contrast. Make sure to set appropriate time limit in *run_prediction.slurm*.
 
 ```bash
 bash src/run_predictions_braindecode_merge.sh
@@ -56,17 +69,20 @@ Postprocessing of
 - Time-resolved interpretation
 - EEGNet decoding
 
+:hourglass_flowing_sand: 30 minutes
 ```bash
 python src/postprocess_accuracies.py
 ```
 
 ## Jupyter notebooks with adhoc analyses
+:hourglass_flowing_sand: 1 minute each
 
 - *demographics.ipynb* will output the demographic information for the manuscript (see Methods)
 - *dnn_stimulus_representation.ipynb* is an analysis of stimulus embeddings (see Methods)
 - *interpret_timeresolved.ipynb* performs a group analysis for the model interpretation of the time-resolved decoding (Fig. 2) 
 
 ## targets (R) - statistics and vizualization
+:hourglass_flowing_sand: 10 minutes
 
 The targets pipeline includes all remaining analyses and outputs all plots. Other numbers are written in the respective processing nodes. The project can be opened in RStudio. The *_targets* file needs to be sourced. Then, *tar_make()* produces all results or re-runs all outdated nodes of the network.
 
