@@ -52,6 +52,7 @@ bash src/run_preprocess.sh
 ```
 
 Time-resolved decoding (starts one job per participant), incl. interpretation:
+
 :hourglass_flowing_sand: <=10 hours per participant
 
 ```bash
@@ -59,6 +60,7 @@ bash src/run_predictions_timeresolved_merge.sh
 ```
 
 EEGNet decoding (starts one job per participant and contrast). 
+
 :hourglass_flowing_sand: <=24 hours per participant and contrast. Make sure to set appropriate time limit in *run_prediction.slurm*.
 
 ```bash
@@ -71,18 +73,21 @@ Postprocessing of
 - EEGNet decoding
 
 :hourglass_flowing_sand: 30 minutes
+
 ```bash
 python src/postprocess_accuracies.py
 ```
 
 ## Jupyter notebooks with adhoc analyses
+
 :hourglass_flowing_sand: 1 minute each
 
 - *demographics.ipynb* will output the demographic information for the manuscript (see Methods)
 - *dnn_stimulus_representation.ipynb* is an analysis of stimulus embeddings (see Methods)
 - *interpret_timeresolved.ipynb* performs a group analysis for the model interpretation of the time-resolved decoding (Fig. 2) 
 
-## targets (R) - statistics and vizualization
+## targets (R) - statistics and visualization
+
 :hourglass_flowing_sand: 10 minutes
 
 The targets pipeline includes all remaining analyses and outputs all plots. Other numbers are written in the respective processing nodes. The project can be opened in RStudio. The *_targets* file needs to be sourced. Then, *tar_make()* produces all results or re-runs all outdated nodes of the network.
