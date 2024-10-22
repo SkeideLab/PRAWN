@@ -23,7 +23,8 @@ The *R/targets* environment and all related processing scripts are found in *tar
 
 ## Preprocessing, and machine learning
 
-Run on a cluster with SLURM job scheduling system.
+For all scripts, adjust the paths depending on your environment.
+Run the following on a HPC cluster with SLURM job scheduling system.
 
 Preprocessing (starts one job per participant):
 
@@ -54,13 +55,13 @@ python src/postprocess_accuracies.py
 
 ## Jupyter notebooks with adhoc analyses
 
-- *demographics.ipynb* will output the demographic information for the manuscript
-- *dnn_sitmulus_representation.ipynb* is an analysis of stimulus embeddings
-- *interpret_timeresolved.ipynb* does a group analysis for the model interpretation of the time resolved decoding (Fig. 2) 
+- *demographics.ipynb* will output the demographic information for the manuscript (see Methods)
+- *dnn_stimulus_representation.ipynb* is an analysis of stimulus embeddings (see Methods)
+- *interpret_timeresolved.ipynb* performs a group analysis for the model interpretation of the time-resolved decoding (Fig. 2) 
 
 ## targets (R) - statistics and vizualization
 
-The targets pipeline includes all remaining analyses and outputs all plots. Other numbers are written in the respective processing nodes. The project can be opened in RStudio. The *_targets* file needs to be sourced. Then, *tar_make()* produces all results (or re-runs all outdated nodes of the network).
+The targets pipeline includes all remaining analyses and outputs all plots. Other numbers are written in the respective processing nodes. The project can be opened in RStudio. The *_targets* file needs to be sourced. Then, *tar_make()* produces all results or re-runs all outdated nodes of the network.
 
 
 
