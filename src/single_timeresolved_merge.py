@@ -24,7 +24,6 @@ from joblib import Parallel, delayed, dump
 from multiprocessing import Manager
 
 from sklearn.preprocessing import StandardScaler
-#from src.ml.bae.bae_utils import *
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
@@ -36,7 +35,7 @@ from mne.decoding import (
     get_coef,
 )
 
-# DEBUG TODO comment!
+# DEBUG
 #sub_ses_str = "sub-001"
 #species="inter"
 
@@ -91,18 +90,14 @@ delete_files_in_folder(f"{dirs['model_dir']}{sub_ses_str}/timeresolved_interpret
 
 """ functions """
 
-
-# We will train the classifier on all left visual vs auditory trials on MEG
 def slider(X,y):
-    #clf = make_pipeline(StandardScaler(), SVC(kernel="linear", class_weight='balanced'))
     clf = make_pipeline(StandardScaler(), LogisticRegression(solver="liblinear", class_weight='balanced'))
     time_decod = SlidingEstimator(clf, n_jobs=1, scoring="balanced_accuracy", verbose=True) # "roc_auc" balanced_accuracy
-    # here we use cv=3 just for speed
     scores = cross_val_multiscore(time_decod, X, y, cv=10, n_jobs=1)
     # Mean scores across cross-validation splits
     return np.mean(scores, axis=0)
 
-def slider_permut(permut_scores): # TODO increase iter
+def slider_permut(permut_scores): 
     """ permute labels, and then run slider """
     y_permut = np.random.permutation(y.copy())
     results = slider(X.copy(),y_permut)
@@ -111,13 +106,10 @@ def slider_permut(permut_scores): # TODO increase iter
     
         
 def slider_interpret(X,y):
-    #clf = make_pipeline(StandardScaler(), SVC(kernel="linear", class_weight='balanced'))
     clf = make_pipeline(StandardScaler(), 
                         LinearModel(LogisticRegression(solver="liblinear", class_weight='balanced')))
     time_decod = SlidingEstimator(clf, n_jobs=1, scoring="balanced_accuracy", verbose=True) # "roc_auc" balanced_accuracy
-    
-    #scores = cross_val_multiscore(time_decod, X, y, cv=10, n_jobs=1)
-    
+        
     time_decod.fit(X, y)
     
     # get coefs and save in epochs object
@@ -205,7 +197,7 @@ for species in ['inter', 'intra_human', 'intra_monkey']:
                     flatten=False,
                     asEpoch=False, # True
                     #sfreq=sfreq,
-                    trials_per_cond_per_chunk=int(max_epochs/5), # 8*5chunks = 40 # TODO: think about subsets or all?
+                    trials_per_cond_per_chunk=int(max_epochs/5),
                     times=(None, None),
                     )
     elif len(sessions)==2:
@@ -221,7 +213,7 @@ for species in ['inter', 'intra_human', 'intra_monkey']:
                     flatten=False,
                     asEpoch=False, # True
                     #sfreq=sfreq,
-                    trials_per_cond_per_chunk=int(max_epochs/5), # 8*5chunks = 40 # TODO: think about subsets or all?
+                    trials_per_cond_per_chunk=int(max_epochs/5),
                     times=(None, None),
                     )
 

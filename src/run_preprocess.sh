@@ -1,9 +1,5 @@
 #!/bin/bash
 
-
-# wrapper to run all multiverses for all subjects and sessions which are defined in the 
-# "downloadable_sub...json" file
-
 # Exit immediately if any command fails
 set -e
 

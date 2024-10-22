@@ -25,7 +25,7 @@ sign_flip <- function(data, n_perm = 10000) {
   # name the columns from -0.4 to 1.0 with 351 steps
   colnames(data) <- times
   
-  n_sub = dim(data)[1] # remove condition and tar_group TODO maybe
+  n_sub = dim(data)[1] #
   n_tp = dim(data)[2]
   
   # remove chance from ts

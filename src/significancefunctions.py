@@ -31,12 +31,6 @@ def z_transform_accuracies(accuracies, accuracies_perm):
 
 # function to get clusters, and their sum, from a time series
 def get_clusters(ts, z_value):
-    # z normalize ts
-    #ts = (ts - np.mean(ts)) / np.std(ts)
-    
-    # find highest values, above z threshold
-    #ts_above = ts[ts > z_value]
-    
     # find indices of 5% highest values
     ts_above_idx = np.where(ts > z_value)
     
@@ -70,7 +64,7 @@ def get_permutation_clusters(accuracies_perm, z_value):
         # get cluster sum
         cluster_sum, _ = get_clusters(ts, z_value)
         
-        # write the biggest cluster sum to a list TODO, could also do with second biggest, and so on, to make it more liberal?
+        # write the biggest cluster sum to a list
         if len(cluster_sum) > 0:
             max_cluster = np.max(cluster_sum)
         else:

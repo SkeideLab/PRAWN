@@ -34,7 +34,7 @@ from multiprocessing import Manager
 # set some parameters
 model = 'EEGNetv4'
 
-# DEBUG TODO comment!
+# DEBUG
 #sub_ses_str = "sub-001"
 #species="inter"
 #merge= True
@@ -78,10 +78,6 @@ test_i = 5 # dummy, or used as separate test set again (rest chunk)
 
 """ subset prep """    
 
-#if merge == True:
-    # l
-
-
 # separate for 2 sessions
 try:
     event_counts1 = json.load(open(f"{dirs['interim_dir']}{sub_ses_str}_ses-001/event_counts.json", 'r'))
@@ -116,7 +112,7 @@ delete_files_in_folder(f"{dirs['model_dir']}{sub_ses_str}/braindecode", f'*_{spe
 
 
 # vary for subset analysis
-n_trials_per_condition = subset #40
+n_trials_per_condition = subset 
 n_trials_per_junk = int(n_trials_per_condition / 5)
 
 """ load data """
@@ -257,7 +253,6 @@ def process_braindecode_fake(shared_list):
         module__sfreq=250,
     )
 
-    # TODO if 10f-CV takes to long for RAVEN, then do 5f
     train_val_split = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
     
     cvs = cross_validate(net, 

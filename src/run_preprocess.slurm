@@ -16,7 +16,7 @@
 #SBATCH --mail-user=kessler@cbs.mpg.de
 #SBATCH --mail-type=ALL
 
-# Check if the correct number of arguments is provided (e.g., 2 arguments)
+# Check if the correct number of arguments is provided
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 sub_ses_str"
     exit 1
@@ -24,7 +24,6 @@ fi
 
 # Access the arguments and set variables
 sub_ses_str="$1"
-
 
 conda activate prawn
 conda info --envs

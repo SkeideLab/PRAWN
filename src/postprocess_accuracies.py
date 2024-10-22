@@ -135,10 +135,7 @@ for session in sessions:
 
 df = pd.concat(df)
 
-# FDR correction
-#sign_fdr, p_fdr = fdrcorrection(df['p_uncorrected'], alpha=0.05, method='indep', is_sorted=False)
-#df['p_fdr'] = p_fdr
-# TODO will be done in R, then more flexible
+# FDR correction will be done in R
 
 df.to_csv(f"{dirs['model_dir']}eegnet.csv", index=False)
 

@@ -1,25 +1,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt
-# import lightgbm as lgb
-# from sklearn.metrics import accuracy_score
-# from src.ml.bayesian_hyperparameter import *
-# from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, roc_curve, auc, roc_auc_score, precision_score, recall_score, f1_score
-# from sklearn.preprocessing import StandardScaler, MinMaxScaler
-# from sklearn.svm import SVC
-# from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-# from sklearn.pipeline import make_pipeline
-# from sklearn.model_selection import cross_val_predict, StratifiedKFold, GridSearchCV, KFold, cross_val_score
-# import pickle
 import mne
 from src.config import *
-
-#from sklearn.decomposition import PCA
-#from src.ml.EEGModels import EEGNet, EEGNetRK, DeepConvNet, ShallowConvNet
-#from tensorflow.keras import utils as np_utils
-#from tensorflow.keras.callbacks import ModelCheckpoint
-#from tensorflow.keras import backend as K
-#import tensorflow as tf
-
 
 
 # single path models
@@ -44,8 +26,6 @@ def check_data_size(y,
         else:
             return True    
     
-            
-    
 
 def extract_metadata_slice(epochs):    
     meta_slice = epochs.metadata.copy().drop("trial_id", axis=1).iloc[0]
@@ -63,7 +43,6 @@ def replace_labels_with_ints(y, classification='inter'):
     
     if classification == "inter":
         y_new = np.array([1 if i in [10003, 10004] else 0 if i in [10001, 10002] else -1 for i in list(y)])
-    # TODO: check if the following returns correct labels
     elif classification == "intra_human":
         y_new =  np.array([1 if i in [10002] else 0 if i in [10001] else -1 for i in list(y)])
     elif classification == "intra_monkey":
@@ -112,7 +91,7 @@ def load_and_prepare_train_test(train_file, test_file, validation_file=None,
     good_picks = mne.pick_types(epochs_train.info, 
                             eeg=True, 
                             eog=False, 
-                            exclude='bads') # TODO: are bad channels correctly labeled in each subject?
+                            exclude='bads') 
     # the "bads" information is assumed to be the same in train and test data
     
     # time range for prediction
@@ -198,7 +177,6 @@ def load_and_prepare_chunks(train_files,
                 condition_chunk = chunk[chunk.events[:, -1] == condition] 
                 included_trial_ids = list(condition_chunk.metadata.trial_id.unique()[:trials_per_cond_per_chunk])
                 condition_chunk_reduced = condition_chunk["trial_id in {}".format(included_trial_ids)]
-                # TODO: this should be more than 8 for multiverse! --> test if correctly done in multiverse
 
                 # Concatenate the condition-specific chunks
                 if filtered_chunk is None:
@@ -329,7 +307,6 @@ def load_and_prepare_chunks_merge(train_files1,
                 condition_chunk = chunk[chunk.events[:, -1] == condition] 
                 included_trial_ids = list(condition_chunk.metadata.trial_id.unique()[:trials_per_cond_per_chunk])
                 condition_chunk_reduced = condition_chunk["trial_id in {}".format(included_trial_ids)]
-                # TODO: this should be more than 8 for multiverse! --> test if correctly done in multiverse
 
                 # Concatenate the condition-specific chunks
                 if filtered_chunk is None:

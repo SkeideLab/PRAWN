@@ -14,7 +14,6 @@ if sys.platform.startswith('darwin'):
     mne.viz.set_browser_backend('qt', verbose=None) # 'qt' or 'matplotlib'
 
 # go to base directory and import globals
-#os.chdir(os.path.dirname(os.getcwd())) # open base_dir to be able to import from src
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(base_dir)
 sys.path.append(base_dir)
@@ -22,7 +21,7 @@ from src.utils import *
 from src.config import *
 
 # DEBUG
-sub_ses_str = "sub-001_ses-001"
+#sub_ses_str = "sub-001_ses-001"
 
 # define subject and session by arguments to this script
 if len(sys.argv) != 2:
@@ -50,7 +49,8 @@ else:
 
 """ HEADER END """
 
-""" PART I: pre-pre-processing """
+
+""" PART I: pre-preprocessing """
 
 # download subject & session from datashare
 download_datashare_dir(datashare_dir = 'PRAWN/raw/eeg/' + sub_ses_str, 
@@ -139,13 +139,7 @@ event_id = np.load(dirs['interim_dir'] + sub_ses_str + '/event_id.npy', allow_pi
 cv = 5 # number of chunks for cv splits
 manager.update_characteristic('cv-folds', cv)
 
-
-# NEW: preprocessing condensed
-
 mne.set_log_level('ERROR')  # only show warning messages
-
-
-#single_forking_path = '0.5_15_ica_None_robust_None_-0.2_offset_True'
 
 # Filter
 _raw0 = raw.copy().filter(l_freq=0.5, h_freq=15, method='fir', fir_design='firwin', skip_by_annotation='EDGE boundary', n_jobs=-1)
@@ -198,12 +192,7 @@ epochs_ar, n1 = autorej(epochs.copy(),
                     save_drop_dict=False,
                     drop_dict_path=None)
 
-#manager.update_characteristic('autoreject', 'n_interpolate_parameter', n_interpolate)
-#manager.update_characteristic('autoreject', 'consensus_parameter', consensus)
 interp_frac_channels, interp_frac_trials, total_interp_frac = summarize_artifact_interpolation(n1)
-#manager.update_characteristic('autoreject', 'total_interp_frac', total_interp_frac)
-#manager.update_characteristic('autoreject', 'interp_frac_channels', interp_frac_channels)
-#manager.update_characteristic('autoreject', 'interp_frac_trials', interp_frac_trials)
 
 # train_test_split moved here here
 epochs_chunks, rest_chunk = train_test_split_epochs_kfcv(epochs_ar.copy(), cv=cv)
