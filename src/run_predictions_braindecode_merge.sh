@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# wrapper to run all models for all subjects and sessions which are defined in the sessions file
-
 # Exit immediately if any command fails
 set -e
 
@@ -37,13 +35,11 @@ for session in "${sessions_arr[@]}"; do
 done
 
 # Define the models and contexts to run
-netz_arr=("EEGNetv4") # "Deep4Net" ,  "ShallowFBCSPNet"
-#context_arr=("inter") #  "inter"
-context_arr=("inter" "intra_human" "intra_monkey") #  "inter"
+netz_arr=("EEGNetv4") 
+context_arr=("inter" "intra_human" "intra_monkey")
 
 # run the multiverse and universes for all (subjects and) sessions in list
 for session in "${sessions_arr[@]}"; do
-
     # Code to run if the file exists
     echo "Sending $session prediction to SLURM."
     for net in "${netz_arr[@]}"; do
@@ -51,7 +47,6 @@ for session in "${sessions_arr[@]}"; do
             sbatch src/run_prediction.slurm $session braindecode_single_merge $net $context
         done
     done
-
 done
 
 # R1: adults extra

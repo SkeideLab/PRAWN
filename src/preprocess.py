@@ -14,7 +14,6 @@ if sys.platform.startswith('darwin'):
     mne.viz.set_browser_backend('qt', verbose=None) # 'qt' or 'matplotlib'
 
 # go to base directory and import globals
-#os.chdir(os.path.dirname(os.getcwd())) # open base_dir to be able to import from src
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(base_dir)
 sys.path.append(base_dir)
@@ -50,7 +49,8 @@ else:
 
 """ HEADER END """
 
-""" PART I: pre-pre-processing """
+
+""" PART I: pre-preprocessing """
 
 # download subject & session from datashare
 download_datashare_dir(datashare_dir = 'PRAWN/raw/eeg/' + sub_ses_str, 
@@ -138,9 +138,6 @@ event_id = np.load(dirs['interim_dir'] + sub_ses_str + '/event_id.npy', allow_pi
 
 cv = 5 # number of chunks for cv splits
 manager.update_characteristic('cv-folds', cv)
-
-
-# NEW: preprocessing condensed
 
 mne.set_log_level('ERROR')  # only show warning messages
 

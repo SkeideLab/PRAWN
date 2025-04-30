@@ -1,25 +1,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt
-# import lightgbm as lgb
-# from sklearn.metrics import accuracy_score
-# from src.ml.bayesian_hyperparameter import *
-# from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, roc_curve, auc, roc_auc_score, precision_score, recall_score, f1_score
-# from sklearn.preprocessing import StandardScaler, MinMaxScaler
-# from sklearn.svm import SVC
-# from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-# from sklearn.pipeline import make_pipeline
-# from sklearn.model_selection import cross_val_predict, StratifiedKFold, GridSearchCV, KFold, cross_val_score
-# import pickle
 import mne
 from src.config import *
-
-#from sklearn.decomposition import PCA
-#from src.ml.EEGModels import EEGNet, EEGNetRK, DeepConvNet, ShallowConvNet
-#from tensorflow.keras import utils as np_utils
-#from tensorflow.keras.callbacks import ModelCheckpoint
-#from tensorflow.keras import backend as K
-#import tensorflow as tf
-
 
 
 # single path models
@@ -43,8 +25,6 @@ def check_data_size(y,
             return False
         else:
             return True    
-    
-            
     
 
 def extract_metadata_slice(epochs):    

@@ -14,7 +14,6 @@
 
 
 # set number of OMP threads per process
-#export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
 export OMP_NUM_THREADS=1 
 
 # Check if the correct number of arguments is provided
@@ -32,7 +31,6 @@ context="$4"
 conda activate prawn
 conda info --envs
 
-
 # Conditional logic for 'braindecode'
 if [ "$model" == "braindecode_single_merge" ]; then # merged session 1 and 2
     srun python3 /u/kroma/PRAWN/src/single_braindecode_merge.py $sub_ses_str $context merge
@@ -49,7 +47,7 @@ elif [ "$model" == "braindecode_single" ]; then
 elif [ "$model" == "timeresolved_single" ]; then 
     srun python3 /u/kroma/PRAWN/src/single_timeresolved_merge.py $sub_ses_str single
 
-else # TODO timeresolved single session
+else 
     echo "Unknown model: $model"
     exit 1
 

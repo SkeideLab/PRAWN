@@ -946,7 +946,6 @@ def ica_eog_emg(raw, sub_ses_str, method='eog', save_ica=False, save_plot=False,
     return raw_new, len(indices)
 
 
-
 def robust_average_PREP(raw, delete_bad_info=True):
     """Do robust averaging AND find bad channels using PREP.
 
@@ -1144,9 +1143,6 @@ def train_test_split_epochs_kfcv(epochs, cv=5):
         rest_chunks (epochs object): epochs object of the remaining data    
     
     """
-    # DEBUG
-    #epochs = epochs_backup.copy()
-    #epochs = epochs_ar.copy()
 
     # get event counts from epochs object
     event_counts = {}
@@ -1159,16 +1155,12 @@ def train_test_split_epochs_kfcv(epochs, cv=5):
     # split the data into cv folds of approximately same sizes
     chunk_sizes = split_approximate(n_smallest_class, cv, descending=True)
 
-    #epochs = epochs_ar.copy()
-
     # make it deterministic
 
     # Shuffle the epochs to randomize the order
     np.random.seed(22) # must be right before the random number generator!
     # must be np.random.seed, because np.random.permutation is used
     epochs = epochs[np.random.permutation(len(epochs))]
-    # DEBUG
-    #print(epochs.events[:10, 2])
     # generate a list of random samples per condition (for all chunks together first)
     epoch_indices = []
     rest_indices = []
@@ -1195,9 +1187,6 @@ def train_test_split_epochs_kfcv(epochs, cv=5):
             this_chunk_indices.append(epoch_indices[c][start_idx:end_idx])
         chunk_indices.append(this_chunk_indices)
 
-    # DEBUG: print indices
-    #print(f"chunk indices: {chunk_indices}")                    
-    
     # put epochs into the chunks
     epochs_chunks = []
     for chunk in chunk_indices:
@@ -1207,19 +1196,12 @@ def train_test_split_epochs_kfcv(epochs, cv=5):
         epochs_chunk = mne.concatenate_epochs(epochs_chunk)
         epochs_chunks.append(epochs_chunk)
 
-    # DEBUG
-    #for i in epochs_chunks:
-    #    print(f"epochs chunk {i} with len {len(i)}")
-                    
     rest_chunk = []
     for this_condition, rest_indices in zip(epochs.event_id.keys(), rest_indices):
         # skip if empty condition, might lead to concatenation error if first condition is empty
         if len(epochs[this_condition][rest_indices]) > 0:
             rest_chunk.append(epochs[this_condition][rest_indices])
-    
-    # DEBUG
-    #for i in rest_chunk:
-    #    print(f"rest chunk {i} with len {len(i)}")
+
     
     # if all conditions are same size, rest chunk is empty
     if rest_chunk:
@@ -1331,10 +1313,6 @@ def autorej(epochs, log_path=None, plot_path=None, ar_model_path=None, mode='est
     
     epochs.del_proj()  # remove proj, don't proj while interpolating (https://autoreject.github.io/stable/auto_examples/plot_auto_repair.html)
 
-    # possibility 1: global rejection threshold
-    #global_reject = get_rejection_threshold(epochs, decim=2) # global rejection threshold, one simple possibility
-    #print('The global rejection dictionary is %s' % reject)
-
     # must be lists for a hyperparameter optimization
     n_interpolate = [n_interpolate] if n_interpolate else [4, 8, 12, 16]
     consensus = [consensus] if consensus else np.linspace(0, 1.0, 11)
@@ -1426,13 +1404,8 @@ def oversample_epochs(epochs, drop_dict, min_samples=4):
         oversampled_epochs (mne.epochs object)
     
     """
-    #new_epochs = []
     counter = 0
     conditions = drop_dict.keys()
-
-    # DEBUG
-    #print(epochs)
-    #print(drop_dict)
 
     for condition in conditions:
         
@@ -1447,10 +1420,6 @@ def oversample_epochs(epochs, drop_dict, min_samples=4):
             print(f"Warning: <= {min_samples} trials left to perform oversampling in condition {condition}. Return only oversampled epochs from other conditions.")
             continue
 
-
-        # DEBUG
-        #print(condition)
-        #print(possible_indices)
 
         # if there are more possible indices than trials to be drawn, draw without replacement
         if len(possible_indices) > drop_dict[condition]:
@@ -1469,14 +1438,12 @@ def oversample_epochs(epochs, drop_dict, min_samples=4):
                                                         add_offset=True)
 
         else:
-            #print(f'Condition {condition}: Oversampling with replacement done, because to few trials leftover.')
 
             dividend = drop_dict[condition]
             divisor = len(possible_indices)
 
             quotient = dividend // divisor
             remainder = dividend % divisor
-            #print(f"{divisor} fits into {dividend} a total of {quotient} times with a remainder of {remainder}.")
             n_draws = quotient + 1
 
             for i in range(n_draws):
@@ -1555,10 +1522,6 @@ def save_identifier_metadata(metadata, output_file):
     meta.to_csv(output_file, index=False)
     
 
-# DEBUG
-#input_dir_pattern=f"{dirs['interim_dir']}{sub_ses_str}/1000Hz*train-epo.fif", 
-#output_file=f"{dirs['processed_dir']}{sub_ses_str}/1000Hz_train-epo.fif", 
-#verbose=False
 
 def concatenate_all_epochs(input_dir_pattern, output_file, save=True, verbose=False):
     """ 
@@ -1676,11 +1639,6 @@ def merge_age_column(input_df, file_path, key_column='sub_ses_str',
     merged_df = merged_df.drop(columns=[key_column])
 
     return merged_df
-
-# Example usage:
-# input_df = ...  # Your input DataFrame
-# file_path = 'path/to/age_table.csv'  # Replace with the actual path to your file
-# merged_result = merge_age_column(input_df, file_path)
 
 
 # get all session identifiers for a particular folder from sessions.json file

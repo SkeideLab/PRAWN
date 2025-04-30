@@ -31,12 +31,6 @@ def z_transform_accuracies(accuracies, accuracies_perm):
 
 # function to get clusters, and their sum, from a time series
 def get_clusters(ts, z_value):
-    # z normalize ts
-    #ts = (ts - np.mean(ts)) / np.std(ts)
-    
-    # find highest values, above z threshold
-    #ts_above = ts[ts > z_value]
-    
     # find indices of 5% highest values
     ts_above_idx = np.where(ts > z_value)
     
