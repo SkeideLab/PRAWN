@@ -30,7 +30,18 @@ The system architecture and hardware details of the HPC used for all *Python* an
 The *R* environment, which is used in a *targets* pipeline and all related processing scripts are found in [targets](/targets).
 
 ```
-packages <-c("dplyr", "magrittr", "ggplot2", "ggpubr", "grid", "png", "reader", "permuco")
+packages <-my_pkg_list <- c("dplyr", 
+                 "magrittr",
+                 "ggplot2", 
+                 "ggpubr",
+                 "grid",
+                 "png",
+                 "readr",
+                 "stringr",
+                 "tidyr",
+                 "tidyverse",
+                 "broom",
+                 "permuco")
 install.packages(packages)
 ```
 
@@ -56,7 +67,8 @@ Time-resolved decoding (starts one job per participant), incl. interpretation:
 :hourglass_flowing_sand: <=10 hours per participant
 
 ```bash
-bash src/run_predictions_timeresolved_merge.sh
+bash src/run_predictions_timeresolved_merge.sh # merge two sessions
+bash src/run_predictions_timeresolved_single.sh # stratified by age group
 ```
 
 EEGNet decoding (starts one job per participant and contrast). 
@@ -64,7 +76,8 @@ EEGNet decoding (starts one job per participant and contrast).
 :hourglass_flowing_sand: <=24 hours per participant and contrast. Make sure to set appropriate time limit in *run_prediction.slurm*.
 
 ```bash
-bash src/run_predictions_braindecode_merge.sh
+bash src/run_predictions_braindecode_merge.sh # merge two sessions
+bash src/run_predictions_braindecode_single.sh # stratified by age group
 ```
 
 Postprocessing of 
@@ -76,6 +89,8 @@ Postprocessing of
 
 ```bash
 python src/postprocess_accuracies.py
+python src/postprocess_accuracies_single.py
+python src/postprocess_accuracies_adults.py
 ```
 
 ## Jupyter notebooks with adhoc analyses
@@ -83,14 +98,16 @@ python src/postprocess_accuracies.py
 :hourglass_flowing_sand: 1 minute each
 
 - *demographics.ipynb* will output the demographic information for the manuscript (see Methods)
-- *dnn_stimulus_representation.ipynb* is an analysis of stimulus embeddings (see Methods)
-- *interpret_timeresolved.ipynb* performs a group analysis for the model interpretation of the time-resolved decoding (Fig. 2) 
+- *dnn_stimulus_representation.ipynb* is an analysis of stimulus embeddings for stimulus preselection (see Methods)
+- *interpret_timeresolved.ipynb* performs a group analysis for the model interpretation of the time-resolved decoding (Fig. 2)
+- *lateralization.ipynb* analyses lateralization coefficients for time-resolved decoding (Fig. S1)
+- *behavior_analysis.ipynb* analyses some age related preprocessing metrics
 
 ## targets (R) - statistics and visualization
 
-:hourglass_flowing_sand: 10 minutes
+:hourglass_flowing_sand: <60 minutes
 
-The targets pipeline includes all remaining analyses and outputs all plots. Other numbers are written in the respective processing nodes. The project can be opened in RStudio. The *_targets.R* file needs to be sourced. Then, ```tar_make()``` produces all results or re-runs all outdated nodes of the network.
+The targets pipeline includes all remaining group analyses and outputs all plots. Other numbers are written in the respective processing nodes. The project can be opened in RStudio. The *_targets.R* file needs to be sourced. Then, ```tar_make()``` produces all results or re-runs all outdated nodes of the network.
 
 
 # License
