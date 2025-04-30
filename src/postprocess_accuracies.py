@@ -7,7 +7,7 @@ import sys
 import glob
 import json
 
-base_dir = '/ptmp/kroma/PRAWN/'
+base_dir = '/u/kroma/PRAWN/'
 
 sys.path.append(base_dir)
 os.chdir(base_dir)
@@ -21,15 +21,13 @@ with open('sessions.json', 'r') as file:
     sessions = data["allsessions_prediction"]
 
 sessions = sorted(list(set([i[:7] for i in sessions])))
-sessions = [i for i in sessions if "90" not in i] # 2 adult pilots
+sessions = [i for i in sessions if "90" not in i] # 2 adult pilots excluded
 
 times = np.linspace(-.4, 1., 351)
 
 
 print(f"Total number of {len(sessions)} included. Before dropout")
 
-
-# DEBUG
 
 ##### TIME-RESOLVED ###########
 
@@ -109,8 +107,7 @@ for session in sessions:
         files = sorted(glob(f"{dirs['model_dir']}{session}/braindecode/*_{species}_result.pck"))
         subsets.append(np.max([int(os.path.basename(i).split('_')[0]) for i in files]))
         
-        for subset_version, subset in zip(['max'],subsets): #'35',
-            #try:
+        for subset_version, subset in zip(['max'],subsets): 
             accuracy, accuracies_perm = load_data(session, f"{subset}_{species}", model=f'braindecode')
 
             # how many percent of the permutation accuracies are above the real accuracy?
@@ -130,15 +127,11 @@ for session in sessions:
                 'll': [lower],
                 'ul': [upper]
                 }))
-    #        except:
-    #            pass
+
 
 df = pd.concat(df)
 
-# FDR correction
-#sign_fdr, p_fdr = fdrcorrection(df['p_uncorrected'], alpha=0.05, method='indep', is_sorted=False)
-#df['p_fdr'] = p_fdr
-# TODO will be done in R, then more flexible
+# FDR correction will be done in R, then more flexible
 
 df.to_csv(f"{dirs['model_dir']}eegnet.csv", index=False)
 

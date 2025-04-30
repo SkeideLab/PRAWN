@@ -63,7 +63,6 @@ def replace_labels_with_ints(y, classification='inter'):
     
     if classification == "inter":
         y_new = np.array([1 if i in [10003, 10004] else 0 if i in [10001, 10002] else -1 for i in list(y)])
-    # TODO: check if the following returns correct labels
     elif classification == "intra_human":
         y_new =  np.array([1 if i in [10002] else 0 if i in [10001] else -1 for i in list(y)])
     elif classification == "intra_monkey":
@@ -112,7 +111,7 @@ def load_and_prepare_train_test(train_file, test_file, validation_file=None,
     good_picks = mne.pick_types(epochs_train.info, 
                             eeg=True, 
                             eog=False, 
-                            exclude='bads') # TODO: are bad channels correctly labeled in each subject?
+                            exclude='bads') 
     # the "bads" information is assumed to be the same in train and test data
     
     # time range for prediction
@@ -175,8 +174,20 @@ def load_and_prepare_chunks(train_files,
                             asEpoch=False, # if it shall be returned as epoch obj. Then flatten must be false.
                             sfreq=None,
                             trials_per_cond_per_chunk='all', # 'all': all trials, int: only the first X trials per condition and chunk
-                            times = (0, None)):  # if not otherwise specified, start at t=0 to the end of the epoch
+                            times = (0, None),  # if not otherwise specified, start at t=0 to the end of the epoch
+                            max_trials = None): # R1: alternative subsampling. If the number of trials shall be reduced due to lower trials in other session
     """ loads and processes epochs and returns training and testing data """
+    # DEBUG
+    # train_files = [file for j, file in enumerate(chunk_files_universe) if j in train_i]
+    # test_file = None
+    # classification = "inter"
+    # flatten = False
+    # asEpoch = False
+    # sfreq=None
+    # trials_per_cond_per_chunk = 'all'
+    # times = (0, None)
+    # max_trials = 47
+    
     
     chunks = []
     for i, file in enumerate(train_files):
@@ -198,7 +209,6 @@ def load_and_prepare_chunks(train_files,
                 condition_chunk = chunk[chunk.events[:, -1] == condition] 
                 included_trial_ids = list(condition_chunk.metadata.trial_id.unique()[:trials_per_cond_per_chunk])
                 condition_chunk_reduced = condition_chunk["trial_id in {}".format(included_trial_ids)]
-                # TODO: this should be more than 8 for multiverse! --> test if correctly done in multiverse
 
                 # Concatenate the condition-specific chunks
                 if filtered_chunk is None:
@@ -210,7 +220,7 @@ def load_and_prepare_chunks(train_files,
             chunks.append(filtered_chunk)
 
     epochs_train = mne.concatenate_epochs(chunks)
-    
+    print(f"DEBUG: epochs_train: {len(epochs_train)}")
     
     # if test file is a list, concatenate them
     if isinstance(test_file, list):
@@ -259,10 +269,38 @@ def load_and_prepare_chunks(train_files,
     # extract the inner_chunk_ids before extracting the data from epochs object
     inner_chunk_ids = list(epochs_train.metadata["inner_chunk_id"])
     
+    # R1: subsample the data to max_trials per condition, if max_trials is specified
+    
+    if max_trials is not None:
+        # get the number of trials per condition
+        n_trials_per_condition = epochs_train.events[:, -1]
+        n_trials_per_condition = np.unique(n_trials_per_condition, return_counts=True)[1]
+        print(f"DEBUG: n_trials_per_condition: {n_trials_per_condition}")
+
+        # get the minimum number of trials per condition
+        min_n_trials = np.min(n_trials_per_condition)
+        print(f" --- !!! equalized n_trials in this session: {min_n_trials}, subsample to {max_trials} !!! --- ")
+        # if the minimum number of trials is greater than max_trials, subsample
+        if min_n_trials > max_trials:
+            subsampled_epochs = []
+            for condition in np.unique(epochs_train.events[:, -1]):
+                this_epochs = epochs_train[epochs_train.events[:, -1] == condition]
+                # subsample the epochs
+                ind = np.random.default_rng(seed=23).choice(range(len(this_epochs)), size=max_trials, replace=False)
+                subsampled_epochs.append(this_epochs[ind])
+            # concatenate the subsampled epochs
+            epochs_train = mne.concatenate_epochs(subsampled_epochs)
+                
+        elif min_n_trials == max_trials:
+            pass
+        else:
+            print(f"not enough trials to subsample: {min_n_trials} < {max_trials}")
+            raise NotEnoughTrialsException("Not enough trials, not returning data.")
+    
     if not asEpoch:
-        X_train = epochs_train.get_data(picks=good_picks,tmin=times[0],tmax=times[1])# DEBUG  [:, :, 2:-2]
+        X_train = epochs_train.get_data(picks=good_picks,tmin=times[0],tmax=times[1])
         if epochs_test is not None:
-            X_test = epochs_test.get_data(picks=good_picks,tmin=times[0],tmax=times[1])# DEBUG [:, :, 2:-2]
+            X_test = epochs_test.get_data(picks=good_picks,tmin=times[0],tmax=times[1])
         else:
             X_test = None
         # reshape to 2D; n_trials x n_channels*n_timepoints
@@ -329,7 +367,6 @@ def load_and_prepare_chunks_merge(train_files1,
                 condition_chunk = chunk[chunk.events[:, -1] == condition] 
                 included_trial_ids = list(condition_chunk.metadata.trial_id.unique()[:trials_per_cond_per_chunk])
                 condition_chunk_reduced = condition_chunk["trial_id in {}".format(included_trial_ids)]
-                # TODO: this should be more than 8 for multiverse! --> test if correctly done in multiverse
 
                 # Concatenate the condition-specific chunks
                 if filtered_chunk is None:
@@ -391,9 +428,9 @@ def load_and_prepare_chunks_merge(train_files1,
     inner_chunk_ids = list(epochs_train.metadata["inner_chunk_id"])
     
     if not asEpoch:
-        X_train = epochs_train.get_data(picks=good_picks,tmin=times[0],tmax=times[1])# DEBUG  [:, :, 2:-2]
+        X_train = epochs_train.get_data(picks=good_picks,tmin=times[0],tmax=times[1])
         if epochs_test is not None:
-            X_test = epochs_test.get_data(picks=good_picks,tmin=times[0],tmax=times[1])# DEBUG [:, :, 2:-2]
+            X_test = epochs_test.get_data(picks=good_picks,tmin=times[0],tmax=times[1])
         else:
             X_test = None
         # reshape to 2D; n_trials x n_channels*n_timepoints

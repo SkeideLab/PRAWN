@@ -22,7 +22,7 @@ from src.utils import *
 from src.config import *
 
 # DEBUG
-sub_ses_str = "sub-001_ses-001"
+#sub_ses_str = "sub-001_ses-001"
 
 # define subject and session by arguments to this script
 if len(sys.argv) != 2:
@@ -72,7 +72,7 @@ manager = CharacteristicsManager(f"{dirs['interim_dir']}{sub_ses_str}/characteri
 raw = load_raw_data(sub_ses_str=sub_ses_str,
                     update_eeg_headers_callback=update_eeg_headers) 
 
-# new: check on "rating" files
+# check on "rating" files
 # - save to file for next step, and replace file in next steps
 if subject_group == 'infants':
     rater_ids, soerensen_dice, n_ratings = calculate_ratings(sub_ses_str, plot=True)
@@ -116,7 +116,7 @@ raw.events = events
 np.save(dirs['interim_dir'] + sub_ses_str + '/events.npy', events)
 np.save(dirs['interim_dir'] + sub_ses_str + '/event_id.npy', event_id, allow_pickle=True)
 
-# create artificial eye channel (VM - VP) for potential later eye blink correction
+# create artificial eye channel (VM - VP) for potential later eye blink correction, end L vs R
 raw = calculate_artificial_channels(raw.copy(), pairs=[['Fp1', 'Fp2'],['F9', 'F10']], labels=['eyeV', 'eyeH'])
 
 # the bad channel Fp1 might not be used anymore? so delete it!
@@ -143,9 +143,6 @@ manager.update_characteristic('cv-folds', cv)
 # NEW: preprocessing condensed
 
 mne.set_log_level('ERROR')  # only show warning messages
-
-
-#single_forking_path = '0.5_15_ica_None_robust_None_-0.2_offset_True'
 
 # Filter
 _raw0 = raw.copy().filter(l_freq=0.5, h_freq=15, method='fir', fir_design='firwin', skip_by_annotation='EDGE boundary', n_jobs=-1)
@@ -198,12 +195,7 @@ epochs_ar, n1 = autorej(epochs.copy(),
                     save_drop_dict=False,
                     drop_dict_path=None)
 
-#manager.update_characteristic('autoreject', 'n_interpolate_parameter', n_interpolate)
-#manager.update_characteristic('autoreject', 'consensus_parameter', consensus)
 interp_frac_channels, interp_frac_trials, total_interp_frac = summarize_artifact_interpolation(n1)
-#manager.update_characteristic('autoreject', 'total_interp_frac', total_interp_frac)
-#manager.update_characteristic('autoreject', 'interp_frac_channels', interp_frac_channels)
-#manager.update_characteristic('autoreject', 'interp_frac_trials', interp_frac_trials)
 
 # train_test_split moved here here
 epochs_chunks, rest_chunk = train_test_split_epochs_kfcv(epochs_ar.copy(), cv=cv)

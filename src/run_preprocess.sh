@@ -31,3 +31,6 @@ for session in "${sessions[@]}"; do
     sbatch src/run_preprocess.slurm $session 
 done
 
+# R1: adults
+sbatch src/run_preprocess.slurm sub-901_ses-001
+sbatch src/run_preprocess.slurm sub-902_ses-001

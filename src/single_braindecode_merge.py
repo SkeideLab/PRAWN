@@ -34,10 +34,11 @@ from multiprocessing import Manager
 # set some parameters
 model = 'EEGNetv4'
 
-# DEBUG TODO comment!
-#sub_ses_str = "sub-001"
+# DEBUG 
+#sub_ses_str = "sub-002_ses-001"
 #species="inter"
-#merge= True
+#merge=False
+#single=True
 
 # define subject and session by arguments to this script
 if len(sys.argv) not in [3,4]:
@@ -51,12 +52,19 @@ else:
         merge = sys.argv[3]
         if merge == "merge":
             merge = True
+            single = False
             print(f"merge the sessions of participant {sub_ses_str}")
+        elif merge == "single": # R1: single session analysis without overwriting the merge analysis in sub-abc folder
+            merge = False
+            single = True
+            print(f"DO NOT merge the sessions of participant {sub_ses_str}, but do single session analysis even in the case of two sessions.")
         else:
             merge = False
+            single = False
             print(f"DO NOT merge the sessions of participant {sub_ses_str}")
     else:
         merge = False
+        single = False
         print(f"DO NOT merge the sessions of participant {sub_ses_str}")
         
 sub = sub_ses_str[4:7]
@@ -78,36 +86,50 @@ test_i = 5 # dummy, or used as separate test set again (rest chunk)
 
 """ subset prep """    
 
-#if merge == True:
-    # l
-
 
 # separate for 2 sessions
-try:
-    event_counts1 = json.load(open(f"{dirs['interim_dir']}{sub_ses_str}_ses-001/event_counts.json", 'r'))
-    max_epochs1 = np.min(list(event_counts1.values()))
-except:
-    max_epochs1 = None
-
-try:
-    event_counts2 = json.load(open(f"{dirs['interim_dir']}{sub_ses_str}_ses-002/event_counts.json", 'r'))
-    max_epochs2 = np.min(list(event_counts2.values()))
-except:
-    max_epochs2 = None
-
+# R1, differentiate between merge and non-merge
 sessions = []
-if max_epochs1 and max_epochs2:
-    max_epochs = max_epochs1 + max_epochs2
-    print(f"max_epochs: {max_epochs1} + {max_epochs2} = {max_epochs}")
-    sessions.extend(["ses-001","ses-002"])
-elif max_epochs1:
-    max_epochs = max_epochs1
-    print(f"max_epochs (only session 1): {max_epochs1}")
-    sessions.append("ses-001")
-elif max_epochs2:
-    max_epochs = max_epochs2
-    print(f"max_epochs (only session 2): {max_epochs2}")
-    sessions.append("ses-002")
+if not single:
+    try:
+        event_counts1 = json.load(open(f"{dirs['interim_dir']}{sub_ses_str}_ses-001/event_counts.json", 'r'))
+        max_epochs1 = np.min(list(event_counts1.values()))
+    except:
+        max_epochs1 = None
+
+    try:
+        event_counts2 = json.load(open(f"{dirs['interim_dir']}{sub_ses_str}_ses-002/event_counts.json", 'r'))
+        max_epochs2 = np.min(list(event_counts2.values()))
+    except:
+        max_epochs2 = None
+    
+    if max_epochs1 and max_epochs2:
+        max_epochs = max_epochs1 + max_epochs2
+        print(f"max_epochs: {max_epochs1} + {max_epochs2} = {max_epochs}")
+        sessions.extend(["ses-001","ses-002"])
+    elif max_epochs1:
+        max_epochs = max_epochs1
+        print(f"max_epochs (only session 1): {max_epochs1}")
+        sessions.append("ses-001")
+    elif max_epochs2:
+        max_epochs = max_epochs2
+        print(f"max_epochs (only session 2): {max_epochs2}")
+        sessions.append("ses-002")
+    
+else:
+    event_counts = json.load(open(f"{dirs['interim_dir']}{sub_ses_str}/event_counts.json", 'r'))
+    if ses == "001":
+        other_ses = "002"
+    elif ses == "002":
+        other_ses = "001"
+    else:
+        raise ValueError(f"Unknown session: {ses}")
+    event_counts_other_ses = json.load(open(f"{dirs['interim_dir']}sub-{sub}_ses-{other_ses}/event_counts.json", 'r'))
+    max_epochs_this_ses = np.min(list(event_counts.values()))
+    max_epochs_other_ses = np.min(list(event_counts_other_ses.values()))
+    max_epochs = np.min([max_epochs_this_ses, max_epochs_other_ses])
+    sessions.append(f"ses-{ses}")
+
         
 
 subset = max_epochs
@@ -117,35 +139,51 @@ delete_files_in_folder(f"{dirs['model_dir']}{sub_ses_str}/braindecode", f'*_{spe
 
 # vary for subset analysis
 n_trials_per_condition = subset #40
-n_trials_per_junk = int(n_trials_per_condition / 5)
+n_trials_per_junk = int(n_trials_per_condition / 5) 
 
 """ load data """
 
 # load data for forking path
-if len(sessions)==1:
-    chunk_files_universe = sorted(glob(f"{dirs['processed_dir']}{sub_ses_str}_{sessions[0]}/250Hz_chunk*-epo.fif"))
+if not single:
+    if len(sessions)==1:
+        chunk_files_universe = sorted(glob(f"{dirs['processed_dir']}{sub_ses_str}_{sessions[0]}/250Hz_chunk*-epo.fif"))
+        X_train, y_train, _, _, _, _, y_train_orig = load_and_prepare_chunks(
+                    train_files = [file for j, file in enumerate(chunk_files_universe) if j in train_i],  
+                    test_file = None, #chunk_files_universe[test_i],
+                    classification=species,
+                    flatten=False,
+                    asEpoch=False, # True
+                    #sfreq=sfreq,
+                    trials_per_cond_per_chunk=n_trials_per_junk, # 8*5chunks = 40 
+                    )
+    elif len(sessions)==2:
+        chunk_files_universe1 = sorted(glob(f"{dirs['processed_dir']}{sub_ses_str}_{sessions[0]}/250Hz_chunk*-epo.fif"))
+        chunk_files_universe2 = sorted(glob(f"{dirs['processed_dir']}{sub_ses_str}_{sessions[1]}/250Hz_chunk*-epo.fif"))
+
+        X_train, y_train, _, _, _, _, y_train_orig = load_and_prepare_chunks_merge(
+                    train_files1 = [file for j, file in enumerate(chunk_files_universe1) if j in train_i],  
+                    train_files2 = [file for j, file in enumerate(chunk_files_universe2) if j in train_i],  
+                    test_file = None, 
+                    classification=species, 
+                    flatten=False,
+                    asEpoch=False, 
+                    #sfreq=sfreq,
+                    trials_per_cond_per_chunk=n_trials_per_junk, 
+                    )
+else:
+    # R1
+    max_epochs = max_epochs // 5 * 5 # make sure that the number of epochs is divisible by 5, that is how the epochs were equalized before, per junk
+    
+    chunk_files_universe = sorted(glob(f"{dirs['processed_dir']}{sub_ses_str}/250Hz_chunk*-epo.fif"))
     X_train, y_train, _, _, _, _, y_train_orig = load_and_prepare_chunks(
                 train_files = [file for j, file in enumerate(chunk_files_universe) if j in train_i],  
-                test_file = None, #chunk_files_universe[test_i],
+                test_file = None, 
                 classification=species,
                 flatten=False,
                 asEpoch=False, # True
                 #sfreq=sfreq,
-                trials_per_cond_per_chunk=n_trials_per_junk, # 8*5chunks = 40 
-                )
-elif len(sessions)==2:
-    chunk_files_universe1 = sorted(glob(f"{dirs['processed_dir']}{sub_ses_str}_{sessions[0]}/250Hz_chunk*-epo.fif"))
-    chunk_files_universe2 = sorted(glob(f"{dirs['processed_dir']}{sub_ses_str}_{sessions[1]}/250Hz_chunk*-epo.fif"))
-
-    X_train, y_train, _, _, _, _, y_train_orig = load_and_prepare_chunks_merge(
-                train_files1 = [file for j, file in enumerate(chunk_files_universe1) if j in train_i],  
-                train_files2 = [file for j, file in enumerate(chunk_files_universe2) if j in train_i],  
-                test_file = None, 
-                classification=species, 
-                flatten=False,
-                asEpoch=False, 
-                #sfreq=sfreq,
-                trials_per_cond_per_chunk=n_trials_per_junk, 
+                trials_per_cond_per_chunk='all', # R1
+                max_trials = max_epochs
                 )
 
 # The exponential moving standardization function work on single trials, therefore:
@@ -236,7 +274,7 @@ for class_label in unique_classes:
 with open(f"{dirs['model_dir']}{sub_ses_str}/braindecode/{subset}_{species}_subclass_accuracies.pck", 'wb') as f:
     pickle.dump(class_accuracies, f)
 
-""" fake models training and evaluation """
+""" surrogate models training and evaluation """
 
 manager = Manager() # shared list
 shared_result_list = manager.list()
@@ -257,7 +295,6 @@ def process_braindecode_fake(shared_list):
         module__sfreq=250,
     )
 
-    # TODO if 10f-CV takes to long for RAVEN, then do 5f
     train_val_split = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
     
     cvs = cross_validate(net, 

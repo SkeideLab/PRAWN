@@ -54,3 +54,10 @@ for session in "${sessions_arr[@]}"; do
 
 done
 
+# R1: adults extra
+sbatch src/run_prediction.slurm sub-901 braindecode_single_merge EEGNetv4 inter
+sbatch src/run_prediction.slurm sub-901 braindecode_single_merge EEGNetv4 intra_human
+sbatch src/run_prediction.slurm sub-901 braindecode_single_merge EEGNetv4 intra_monkey
+sbatch src/run_prediction.slurm sub-902 braindecode_single_merge EEGNetv4 inter
+sbatch src/run_prediction.slurm sub-902 braindecode_single_merge EEGNetv4 intra_human
+sbatch src/run_prediction.slurm sub-902 braindecode_single_merge EEGNetv4 intra_monkey

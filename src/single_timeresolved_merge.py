@@ -36,50 +36,74 @@ from mne.decoding import (
     get_coef,
 )
 
-# DEBUG TODO comment!
-#sub_ses_str = "sub-001"
+# DEBUG 
+#sub_ses_str = "sub-002_ses-001"
 #species="inter"
+#single=True
+#merge=False
 
 # define subject and session by arguments to this script
-if len(sys.argv) not in [1,2]:
-    print("Usage: python script.py sub_ses_str")
+if len(sys.argv) not in [2,3]:
+    print("Usage: python script.py sub_ses_str single|merge")
     sys.exit(1)
 else:
     sub_ses_str = sys.argv[1]
+    if sys.argv[2] == "single": # R1
+        merge = False
+        single = True
+    else:
+        merge = True
+        single = False
 
 sub = sub_ses_str[4:7]
+if merge == False: # R1
+    ses = sub_ses_str[-3:] 
 #ses = sub_ses_str[-3:]
 train_i = [0,1,2,3,4]
 test_i = 5 # dummy, or used as separate test set again (rest chunk)
 
 
-
-# separate for 2 sessions
-try:
-    event_counts1 = json.load(open(f"{dirs['interim_dir']}{sub_ses_str}_ses-001/event_counts.json", 'r'))
-    max_epochs1 = np.min(list(event_counts1.values()))
-except:
-    max_epochs1 = None
-
-try:
-    event_counts2 = json.load(open(f"{dirs['interim_dir']}{sub_ses_str}_ses-002/event_counts.json", 'r'))
-    max_epochs2 = np.min(list(event_counts2.values()))
-except:
-    max_epochs2 = None
-
 sessions = []
-if max_epochs1 and max_epochs2:
-    max_epochs = max_epochs1 + max_epochs2
-    print(f"max_epochs: {max_epochs1} + {max_epochs2} = {max_epochs}")
-    sessions.extend(["ses-001","ses-002"])
-elif max_epochs1:
-    max_epochs = max_epochs1
-    print(f"max_epochs (only session 1): {max_epochs1}")
-    sessions.append("ses-001")
-elif max_epochs2:
-    max_epochs = max_epochs2
-    print(f"max_epochs (only session 2): {max_epochs2}")
-    sessions.append("ses-002")
+if not single: # R1
+    # separate for 2 sessions
+    try:
+        event_counts1 = json.load(open(f"{dirs['interim_dir']}{sub_ses_str}_ses-001/event_counts.json", 'r'))
+        max_epochs1 = np.min(list(event_counts1.values()))
+    except:
+        max_epochs1 = None
+
+    try:
+        event_counts2 = json.load(open(f"{dirs['interim_dir']}{sub_ses_str}_ses-002/event_counts.json", 'r'))
+        max_epochs2 = np.min(list(event_counts2.values()))
+    except:
+        max_epochs2 = None
+
+    if max_epochs1 and max_epochs2:
+        max_epochs = max_epochs1 + max_epochs2
+        print(f"max_epochs: {max_epochs1} + {max_epochs2} = {max_epochs}")
+        sessions.extend(["ses-001","ses-002"])
+    elif max_epochs1:
+        max_epochs = max_epochs1
+        print(f"max_epochs (only session 1): {max_epochs1}")
+        sessions.append("ses-001")
+    elif max_epochs2:
+        max_epochs = max_epochs2
+        print(f"max_epochs (only session 2): {max_epochs2}")
+        sessions.append("ses-002")
+
+else:
+    event_counts = json.load(open(f"{dirs['interim_dir']}{sub_ses_str}/event_counts.json", 'r'))
+    if ses == "001":
+        other_ses = "002"
+    elif ses == "002":
+        other_ses = "001"
+    else:
+        raise ValueError(f"Unknown session: {ses}")
+    event_counts_other_ses = json.load(open(f"{dirs['interim_dir']}sub-{sub}_ses-{other_ses}/event_counts.json", 'r'))
+    max_epochs_this_ses = np.min(list(event_counts.values()))
+    max_epochs_other_ses = np.min(list(event_counts_other_ses.values()))
+    max_epochs = np.min([max_epochs_this_ses, max_epochs_other_ses])
+    sessions.append(f"ses-{ses}")
         
 print(sub_ses_str)
 
@@ -102,7 +126,7 @@ def slider(X,y):
     # Mean scores across cross-validation splits
     return np.mean(scores, axis=0)
 
-def slider_permut(permut_scores): # TODO increase iter
+def slider_permut(permut_scores): 
     """ permute labels, and then run slider """
     y_permut = np.random.permutation(y.copy())
     results = slider(X.copy(),y_permut)
@@ -122,7 +146,7 @@ def slider_interpret(X,y):
     
     # get coefs and save in epochs object
     coef = get_coef(time_decod, "patterns_", inverse_transform=True)
-    evoked_time_gen = mne.EvokedArray(coef, epochs.info, tmin=epochs.times[0])
+    evoked_time_gen = mne.EvokedArray(coef, epochs.info, tmin=epochs.times[0]) # R0, wrong timings but was used correct later
     evoked_time_gen.save(f"{dirs['model_dir']}{sub_ses_str}/timeresolved_interpret/{species}_patterns-ave.fif", overwrite=True)
     
     # plot        
@@ -134,7 +158,6 @@ def slider_interpret(X,y):
     fig.savefig(f"{dirs['model_dir']}{sub_ses_str}/timeresolved_interpret/{species}_patterns.png")
     plt.close(fig)
     
-    # TODO: if intra is analyzed, also save the single identities per species as ERP
     if species == "inter":
 
         evoked1 = epochs["10001", "10002"].average()
@@ -188,43 +211,60 @@ def slider_interpret(X,y):
                 
 
 """ estimation """
-
+# DEBUG
+#species="inter"
 for species in ['inter', 'intra_human', 'intra_monkey']:
     
 
-    min_epochs = 35
+    min_epochs = 35 # not used atm, as selection took place already
 
     """ load data """
+    if not single:
+        if len(sessions)==1:
+            chunk_files_universe = sorted(glob(f"{dirs['processed_dir']}{sub_ses_str}_{sessions[0]}/250Hz_chunk*-epo.fif"))
+            X, y, _, _, _, epochs, _ = load_and_prepare_chunks(
+                        train_files = [file for j, file in enumerate(chunk_files_universe) if j in train_i],  
+                        test_file = None, #chunk_files_universe[test_i],
+                        classification=species, #species, # there was an error, that's why the the results were so good before
+                        flatten=False,
+                        asEpoch=False, # True
+                        #sfreq=sfreq,
+                        trials_per_cond_per_chunk=int(max_epochs/5), # 8*5chunks = 40 
+                        times=(None, None),
+                        )
+        elif len(sessions)==2:
+            chunk_files_universe1 = sorted(glob(f"{dirs['processed_dir']}{sub_ses_str}_{sessions[0]}/250Hz_chunk*-epo.fif"))
+            chunk_files_universe2 = sorted(glob(f"{dirs['processed_dir']}{sub_ses_str}_{sessions[1]}/250Hz_chunk*-epo.fif"))
+            #chunk_files_universe = chunk_files_universe1 + chunk_files_universe2
 
-    if len(sessions)==1:
-        chunk_files_universe = sorted(glob(f"{dirs['processed_dir']}{sub_ses_str}_{sessions[0]}/250Hz_chunk*-epo.fif"))
+            X, y, _, _, _, epochs, _ = load_and_prepare_chunks_merge(
+                        train_files1 = [file for j, file in enumerate(chunk_files_universe1) if j in train_i],  
+                        train_files2 = [file for j, file in enumerate(chunk_files_universe2) if j in train_i],  
+                        test_file = None, #chunk_files_universe[test_i],
+                        classification=species, #species, # there was an error, that's why the the results were so good before
+                        flatten=False,
+                        asEpoch=False, # True
+                        #sfreq=sfreq,
+                        trials_per_cond_per_chunk=int(max_epochs/5), # 8*5chunks = 40
+                        times=(None, None),
+                        )
+
+    else:
+        # R1
+        max_epochs = max_epochs // 5 * 5 # make sure that the number of epochs is divisible by 5, that is how the epochs were equalized before, per junk
+        
+        chunk_files_universe = sorted(glob(f"{dirs['processed_dir']}{sub_ses_str}/250Hz_chunk*-epo.fif"))
         X, y, _, _, _, epochs, _ = load_and_prepare_chunks(
                     train_files = [file for j, file in enumerate(chunk_files_universe) if j in train_i],  
-                    test_file = None, #chunk_files_universe[test_i],
-                    classification=species, #species, # there was an error, that's why the the results were so good before
+                    test_file = None, 
+                    classification=species,
                     flatten=False,
                     asEpoch=False, # True
                     #sfreq=sfreq,
-                    trials_per_cond_per_chunk=int(max_epochs/5), # 8*5chunks = 40 # TODO: think about subsets or all?
-                    times=(None, None),
-                    )
-    elif len(sessions)==2:
-        chunk_files_universe1 = sorted(glob(f"{dirs['processed_dir']}{sub_ses_str}_{sessions[0]}/250Hz_chunk*-epo.fif"))
-        chunk_files_universe2 = sorted(glob(f"{dirs['processed_dir']}{sub_ses_str}_{sessions[1]}/250Hz_chunk*-epo.fif"))
-        #chunk_files_universe = chunk_files_universe1 + chunk_files_universe2
-
-        X, y, _, _, _, epochs, _ = load_and_prepare_chunks_merge(
-                    train_files1 = [file for j, file in enumerate(chunk_files_universe1) if j in train_i],  
-                    train_files2 = [file for j, file in enumerate(chunk_files_universe2) if j in train_i],  
-                    test_file = None, #chunk_files_universe[test_i],
-                    classification=species, #species, # there was an error, that's why the the results were so good before
-                    flatten=False,
-                    asEpoch=False, # True
-                    #sfreq=sfreq,
-                    trials_per_cond_per_chunk=int(max_epochs/5), # 8*5chunks = 40 # TODO: think about subsets or all?
-                    times=(None, None),
-                    )
-
+                    times = (None,None), 
+                    trials_per_cond_per_chunk='all', # R1
+                    max_trials = max_epochs
+                    )    
 
     print(f"DEBUG: Context: {species}, Subset: {max_epochs}, X.shape: {X.shape}, y.shape: {y.shape}")
     
@@ -243,7 +283,7 @@ for species in ['inter', 'intra_human', 'intra_monkey']:
     """ run permutations """
     manager = Manager() # shared list
     permut_scores = manager.list()
-    Parallel(n_jobs=-1)(delayed(slider_permut)(permut_scores) for _ in range(1000)) # 200 * 5 cvs = 1000 fake models
+    Parallel(n_jobs=-1)(delayed(slider_permut)(permut_scores) for _ in range(1000)) 
 
 
     # Access the results in the shared list

@@ -361,7 +361,7 @@ def load_raw_data(sub_ses_str, update_eeg_headers_callback=None):
     
     # info file for trigger exclusions
     try:
-        info = json.load(open(f"{dirs['raw_dir']}{sub_ses_str}/info.json")) # TODO: files like this for each eeg file, if several present in folder
+        info = json.load(open(f"{dirs['raw_dir']}{sub_ses_str}/info.json")) 
         print("info with raw data found: ")
         print(info)
     except:
@@ -525,7 +525,7 @@ def load_raw_trigger_rating_matching(sub_ses_str, plot=False):
 
     # info file for trigger exclusions
     try:
-        info = json.load(open(f"{dirs['raw_dir']}{sub_ses_str}/info.json")) # TODO: files like this for each eeg file, if several present in folder
+        info = json.load(open(f"{dirs['raw_dir']}{sub_ses_str}/info.json")) 
         print("info with raw data found: ")
         print(info)
     except:
@@ -946,66 +946,12 @@ def ica_eog_emg(raw, sub_ses_str, method='eog', save_ica=False, save_plot=False,
     return raw_new, len(indices)
 
 
-# def eog_regression(raw, events, event_id, plot=True):
-#     """_summary_
-
-#     inspired by: https://mne.tools/dev/auto_tutorials/preprocessing/35_artifact_correction_regression.html
-#     especially the part: "create EOG evoked before regression"
-#     based on R. J. Croft and R. J. Barry. Removal of ocular artifact from the EEG: a review. Clinical Neurophysiology, 30(1):5–19, 2000. doi:10.1016/S0987-7053(00)00055-1.
-#     Args:
-#         raw (_type_): _description_
-#         plot (bool, optional): _description_. Defaults to True.
-
-#     Returns:
-#         _type_: _description_
-        
-#     DISCONTINUED: it would be a mess to account for all possible different references
-#     OR IF USED: use only before referencing step in MULTIVERSE
-#     """
-
-#     # i need to set the artificial reference channel, if no other reference is specifie
-#     raw2 = raw.copy()
-#     raw2.add_reference_channels(['artificial']) # has 0s everywhere
-#     epochs_orig = mne.Epochs(raw2, events, event_id=event_id, preload=True)
-    
-#     plot_kwargs = dict(picks="all", ylim=dict(eeg=(-10, 10), eog=(-5, 15)))
-
-    
-#     eog_epochs = mne.preprocessing.create_eog_epochs(raw2)
-#     # We need to explicitly specify that we want to average the EOG channel too.
-#     eog_evoked = eog_epochs.average("all")
-#     eog_evoked.plot("all")
-#     fig.set_size_inches(6, 6)
-
-
-
-
-#     # perform regression on the evoked blink response
-#     model_evoked = EOGRegression(picks="eeg", picks_artifact="eog").fit(eog_evoked)
-#     fig = model_evoked.plot(vlim=(-1, 1))
-#     fig.set_size_inches(3, 2)
-
-#     # apply the regression coefficients to the original epochs
-#     epochs_clean_evoked = model_evoked.apply(epochs_orig).apply_baseline()
-#     fig = epochs_clean_evoked.average("all").plot(**plot_kwargs)
-#     fig.set_size_inches(6, 6)
-
-#     # for good measure, also show the effect on the blink evoked
-#     eog_evoked_clean = model_evoked.apply(eog_evoked)
-#     eog_evoked_clean.apply_baseline()
-#     eog_evoked_clean.plot("all")
-#     fig.set_size_inches(6, 6)
-    
-    
-#     # TODO this delivers extremly high values, does not seem right
-#     # TODO maybe include more steps from tutorial but upper examples
-#     return raw_cleaned
 
 def robust_average_PREP(raw, delete_bad_info=True):
     """Do robust averaging AND find bad channels using PREP.
 
     Args:
-        raw (mne.raw): raw data (TODO: is epoch also working?)
+        raw (mne.raw): raw data
         delete_bad_indo (bool): delete bads from the info object, as being done for MULTIVERSE analysis
     Returns:
         raw (mne.raw): processed raw data object
@@ -1076,7 +1022,7 @@ def find_bad_channels_PREP(raw, as_dict=False):
     """Find bad channels using PREP pipeline.
 
     Args:
-        raw (mne.raw): raw data (TODO: is epoch also working?)
+        raw (mne.raw): raw data 
         as_dict (bool): return bad channels as dict or list
     Returns:
         bads (list or dict): list or dict of bad channels
@@ -1268,7 +1214,6 @@ def train_test_split_epochs_kfcv(epochs, cv=5):
     rest_chunk = []
     for this_condition, rest_indices in zip(epochs.event_id.keys(), rest_indices):
         # skip if empty condition, might lead to concatenation error if first condition is empty
-        # TODO: double check if the condition numbers correspond to the chunks and rest chunks later
         if len(epochs[this_condition][rest_indices]) > 0:
             rest_chunk.append(epochs[this_condition][rest_indices])
     
