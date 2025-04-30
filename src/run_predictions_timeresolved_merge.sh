@@ -35,3 +35,8 @@ for session in "${sessions_arr[@]}"; do
     echo "Sending $session prediction to SLURM."
     sbatch src/run_prediction.slurm $session timeresolved_single_merge dummy dummy
 done
+
+
+# R1: adults extra
+sbatch src/run_prediction.slurm sub-901 timeresolved_single_merge dummy dummy
+sbatch src/run_prediction.slurm sub-902 timeresolved_single_merge dummy dummy

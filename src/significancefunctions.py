@@ -6,12 +6,12 @@ import numpy as np
 def load_data(session, species, model='timeresolved_single'):
     # random floats, centered around 0.5, with a standard deviation of 0.1
     #accuracies = np.random.normal(0.6, 0.1, 251)
-    with open(f'/ptmp/kroma/PRAWN/models/{session}/{model}/{species}_result.pck', 'rb') as f:
+    with open(f'/u/kroma/PRAWN/models/{session}/{model}/{species}_result.pck', 'rb') as f:
         accuracies = pickle.load(f, encoding='utf-8')
 
     # random floats, centered around 0.5, with a standard deviation of 0.1, but in form 1000, 251
     #accuracies_perm = np.random.normal(0.6, 0.1, (1000, 251))
-    with open(f'/ptmp/kroma/PRAWN/models/{session}/{model}/{species}_permutations.pck', 'rb') as f:
+    with open(f'/u/kroma/PRAWN/models/{session}/{model}/{species}_permutations.pck', 'rb') as f:
         accuracies_perm = pickle.load(f, encoding='utf-8')
 
     return accuracies, accuracies_perm
@@ -64,7 +64,7 @@ def get_permutation_clusters(accuracies_perm, z_value):
         # get cluster sum
         cluster_sum, _ = get_clusters(ts, z_value)
         
-        # write the biggest cluster sum to a list
+        # write the biggest cluster sum to a list 
         if len(cluster_sum) > 0:
             max_cluster = np.max(cluster_sum)
         else:

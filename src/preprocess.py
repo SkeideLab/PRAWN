@@ -72,7 +72,7 @@ manager = CharacteristicsManager(f"{dirs['interim_dir']}{sub_ses_str}/characteri
 raw = load_raw_data(sub_ses_str=sub_ses_str,
                     update_eeg_headers_callback=update_eeg_headers) 
 
-# new: check on "rating" files
+# check on "rating" files
 # - save to file for next step, and replace file in next steps
 if subject_group == 'infants':
     rater_ids, soerensen_dice, n_ratings = calculate_ratings(sub_ses_str, plot=True)
@@ -116,7 +116,7 @@ raw.events = events
 np.save(dirs['interim_dir'] + sub_ses_str + '/events.npy', events)
 np.save(dirs['interim_dir'] + sub_ses_str + '/event_id.npy', event_id, allow_pickle=True)
 
-# create artificial eye channel (VM - VP) for potential later eye blink correction
+# create artificial eye channel (VM - VP) for potential later eye blink correction, end L vs R
 raw = calculate_artificial_channels(raw.copy(), pairs=[['Fp1', 'Fp2'],['F9', 'F10']], labels=['eyeV', 'eyeH'])
 
 # the bad channel Fp1 might not be used anymore? so delete it!

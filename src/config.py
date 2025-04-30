@@ -5,7 +5,8 @@ import sys, os
 if sys.platform.startswith('darwin'):
     base_dir = '/Users/roman/GitHub/PRAWN_ER/'
 elif sys.platform.startswith('linux'):
-    base_dir = '/ptmp/kroma/PRAWN/'
+    #base_dir = '/ptmp/kroma/PRAWN/' # R0
+    base_dir = '/u/kroma/PRAWN/' # R1
 os.chdir(base_dir)
 
 

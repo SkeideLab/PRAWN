@@ -1021,7 +1021,7 @@ def find_bad_channels_PREP(raw, as_dict=False):
     """Find bad channels using PREP pipeline.
 
     Args:
-        raw (mne.raw): raw data
+        raw (mne.raw): raw data 
         as_dict (bool): return bad channels as dict or list
     Returns:
         bads (list or dict): list or dict of bad channels
