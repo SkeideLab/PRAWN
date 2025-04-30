@@ -1,3 +1,8 @@
+# this functions are downloaded from the bayesian prevalence R package
+# https://github.com/robince/bayesian-prevalence
+# 
+# 
+
 
 # nleqslv package required for HPDI optimization
 library(nleqslv)

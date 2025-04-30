@@ -13,3 +13,9 @@ zenodo
 
 .Rproj.user
 .Rproj.user
+
+archive
+
+**/*.DS_Store
+.DS_Store
+*DS_Store

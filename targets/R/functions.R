@@ -11,7 +11,7 @@ import_timeseries <- function(file) {
   dfslid
 }
 
-sign_flip <- function(data, n_perm = 10000) {
+sign_flip <- function(data, n_perm = 10000, chance = 0.5) {
   # debug
   #n_perm=1024*8
   #data <- tar_read(tr_data_con, branches=1)
@@ -19,7 +19,7 @@ sign_flip <- function(data, n_perm = 10000) {
   
   # implement permutations
   times <- seq(-0.4, 1.0, length.out = 351) # assuming 1 condition
-  chance = 0.5
+  #chance = 0.5
   
   data <- t(data)
   # name the columns from -0.4 to 1.0 with 351 steps
@@ -55,3 +55,20 @@ sign_flip <- function(data, n_perm = 10000) {
   
 }
 
+# R1:
+# split_sessions <- function(data) {
+#   list(
+#     ses_001 = data[, grepl("ses.001", names(data)), drop = FALSE],
+#     ses_002 = data[, grepl("ses.002", names(data)), drop = FALSE]
+#   )
+# }
+split_sessions <- function(data) {
+  if (!is.data.frame(data)) {
+    stop("Input is not a data frame")
+  }
+  
+  list(
+    ses_001 = data[, grepl("ses.001", names(data)), drop = FALSE],
+    ses_002 = data[, grepl("ses.002", names(data)), drop = FALSE]
+  )
+}

@@ -16,6 +16,10 @@ tar_option_set(
                "grid", # to use rasterplot
                "png",
                "readr",
+               "stringr", # R1
+               "tidyr", # R1
+               "tidyverse", # R1
+               "broom", # R1
                "permuco") # packages that your targets use
   # format = "qs", # Optionally set the default storage format. qs is fast.
 )
@@ -67,7 +71,6 @@ list(
   tar_target(name = tr_data_con, 
              command = list(tr_data_inter, tr_data_intra_human, tr_data_intra_monkey),
              iteration = "list"),
-  
   
   # load the images for plotting
   tar_target(
@@ -370,18 +373,12 @@ list(
     command = {
       p <- ggplot(data = en_data_con, 
              aes(x = participant, y = accuracy, color = significance)) + #p_fdr < 0.05
-            #geom_bar(stat = "identity") +
-            #scale_fill_manual(values = c("black", "darkred")) +
-            
             # Add error bar-like things for the underlying permutation distribution (from ll to ul)
-            #geom_errorbar(aes(ymin = ll, ymax = ul), width = 0.5, color = rkcolors[2]) +
             geom_crossbar(aes(ymin = ll, ymax = ul),
                           color="grey", #rkcolors[2],
                           width = 0.0, #0.2, 0 because this is an additional bar that is added to the lollipop  # Adjust width to change the thickness of the bar
                           size = 1.5) + # Adjust thickness with size, this is the large bar
             
-        
-        
             # lollypop
             geom_point(size = 2) +
             scale_color_manual(values = c("black", rkcolors[3])) +
@@ -390,20 +387,14 @@ list(
                              y=0.5, 
                              yend=accuracy)) + 
             
-        
             labs(x = "Participant", y = "Accuracy", title = labels) +
             lims(y = c(en_min_y_value, en_max_y_value)) +
-            
-        
             theme_light() +
-        
             theme(#strip.text.x = element_blank(),
                   legend.background = element_rect(colour="black", fill="white"),
-                  #strip.background = element_rect(colour="white", fill="white"),
                   legend.position=c(0.6,0.10),
                   legend.title = element_blank(), # remove legend title
                   axis.text.x = element_blank()
-                    #element_text(angle = 90, size=8, vjust = 0)
         )
       if (labels != "Face categorization"){
         p <- p + guides(color = "none")
@@ -668,8 +659,787 @@ list(
                      width = 12, height = 12, units = "cm", dpi = 300, scale=1.2,
                      bg="white"),
     description = "save EEGNet subclass accuracies plot"
-  )
-    
+  ),
   
+  # R1
+  
+  tar_target(
+    name = tr_file_single,
+    command = "../models/timeresolved_single.csv",
+    format = "file",
+    description = "timeresolved timeseries data file (only subs with 2 sess)" 
+  ),
+  
+  # tr
+  tar_target(
+    name = tr_data_single,
+    command = read.csv(tr_file_single),
+    description = "timeresolved timeseries data single" 
+  ),
+  
+  # manual group by
+  tar_target(name = tr_data_inter_single, command = tr_data_single %>% subset(species=="inter") %>% select(-c(species))),
+  tar_target(name = tr_data_intra_human_single, command = tr_data_single %>% subset(species=="intra_human") %>% select(-c(species))),
+  tar_target(name = tr_data_intra_monkey_single, command = tr_data_single %>% subset(species=="intra_monkey") %>% select(-c(species))),
+  tar_target(name = tr_data_con_single, 
+             command = list(tr_data_inter_single, tr_data_intra_human_single, tr_data_intra_monkey_single),
+             iteration = "list"),
+  
+  # Split each species-specific dataset by session
+  tar_target(
+    name = tr_data_con_split_pre,
+    command = {
+      split_sessions(tr_data_con_single) #, unlist(xx, recursive=FALSE)
+      },
+    pattern = map(tr_data_con_single),
+    iteration = "list"
+  ),
+  
+  # split the 2 lists per branch into one large list
+  tar_target(
+    name = tr_data_con_split,
+    command = {
+      # unlist(tr_data_con_split_pre, recursive=FALSE)
+      tr_data_con_split_pre %>% purrr::reduce(c)
+    },
+    iteration = "list"
+  ),
+  
+  
+  tar_target(
+    name = tr_permutations_split,
+    command = sign_flip(tr_data_con_split),
+    pattern = map(tr_data_con_split),
+    iteration = "list"
+  ),
+
+
+  tar_target(
+    name = clustermass_split,
+    command = {
+      cm <- compute_clustermass(tr_permutations_split,
+                                threshold=0.01,
+                                aggr_FUN=sum,
+                                alternative = "greater")
+      cm$main[,"pvalue"]
+    },
+    pattern = map(tr_permutations_split),
+    iteration="list",
+    description = "cluster mass test"
+  ),
+  tar_target(
+    name = clusterdepth_split,
+    command = {
+      cd <- compute_clusterdepth(tr_permutations_split,
+                                 threshold=0.01,
+                                 alternative="greater")
+      cd$main[,"pvalue"]
+    },
+    pattern = map(tr_permutations_split),
+    iteration="list",
+    description = "cluster depth test"
+  ),
+  
+  tar_target(
+    name = tr_se_split,
+    command = {
+
+      # Calculate the mean for each time point (row-wise mean across participants)
+      mean_values <- apply(tr_data_con_split, 1, mean)
+      # Calculate the standard deviation for each time point (row-wise standard deviation across participants)
+      sd_values <- apply(tr_data_con_split, 1, sd)
+      # Number of participants (columns)
+      n_participants <- ncol(tr_data_con_split)
+      # Calculate the standard error of the mean for each time point
+      sem_values <- sd_values / sqrt(n_participants)
+
+      # Combine the mean and SEM into a data frame for easy reference
+      result <- data.frame(times=seq(-0.4, 1.0, length.out = 351),
+                           mean = mean_values,
+                           sem = sem_values)
+    },
+    pattern = map(tr_data_con_split),
+    iteration="list",
+    description = "timeresolved compute standard error of time series"
+  ),
+
+  tar_target(
+    name = tr_results_split,
+    command = data.frame(times = seq(-0.4, 1.0, length.out = 351),
+                         accuracy = tr_permutations_split[1,] + 0.5,
+                         sem = tr_se_split$sem,
+                         ll = tr_permutations_split[1,] + 0.5 - tr_se_split$sem,
+                         ul = tr_permutations_split[1,] + 0.5 + tr_se_split$sem,
+                         pmass = clustermass_split,
+                         pdepth = clusterdepth_split
+    ),
+    pattern = map(tr_permutations_split,clustermass_split,clusterdepth_split, tr_se_split),
+    iteration = "list",
+    description = "timeresolved results merged depth and mass"
+  ),
+
+  # maximal y value for plotting
+  tar_target(tr_max_y_value_split, max(sapply(tr_results_split, function(df) max(df$ul)))),
+  tar_target(tr_min_y_value_split, min(sapply(tr_results_split, function(df) min(df$ll)))),
+
+  # labels for plots
+  tar_target(labels_split,
+            list("Face categorization: 5-8 months","Face categorization: 9-11 months",
+                 "Human face individuation: 5-8 months","Human face individuation: 9-11 months",
+                 "Monkey face individuation: 5-8 months","Monkey face individuation: 9-11 months"),
+            iteration = "list"),
+
+  # plot
+  tar_target(
+    name = tr_plots_split,
+    command = {
+      offset = 0.5
+
+      ggplot(data = tr_results_split, aes(x = times, y = accuracy)) +
+
+
+        # SE of the mean
+        geom_ribbon(aes(ymin = accuracy - tr_se_split$sem,
+                        ymax = accuracy + tr_se_split$sem,
+                        #fill = "SEM" # To make it appear in the legend
+        ),
+        fill = "grey",
+        alpha = 0.5) +  # Adjust fill color and transparency
+
+
+        geom_line(color = "black") +  # Line plot for times vs accuracy
+
+        # Points for pmass < 0.05
+        geom_point(aes(y = -0.005 + offset, color = "Cluster: p < 0.05 (FWER)"),
+                   data = tr_results_split[!is.na(tr_results_split$pmass) & tr_results_split$pmass < 0.05,],
+                   size = 1) +
+
+        # Points for pdepth < 0.05
+        geom_point(aes(y = -0.010 + offset, color = "Time point: p < 0.05 (FWER)"),
+                   data = tr_results_split[!is.na(tr_results_split$pdepth) & tr_results_split$pdepth < 0.05,],
+                   size = 1) +
+
+        scale_color_manual(values = c("Cluster: p < 0.05 (FWER)" = rkcolors[1], ##7570b3
+                                      "Time point: p < 0.05 (FWER)" = rkcolors[3])) +  # #1b9e77
+
+        # if i want to appear it in the legend
+        #scale_fill_manual(values = c("SEM" = rkcolors[2])) +  # Color for SEM with label
+
+
+        #theme_minimal() +
+        labs(x = "Time (s)", y = "Accuracy", title = labels_split) + #, color = ""
+        #labs(x = "Time | s", y = "Accuracy", title = "Time-resolved Accuracy (Human vs. Monkey)", color = "Significant Decoding") +
+
+        #ylim(min(pdata$accuracy, -0.022), max(pdata$accuracy)) +
+        geom_vline(xintercept = 0, linetype="dashed", color="black") +
+        geom_hline(yintercept = 0 + offset, linetype="dashed", color="black") +
+
+        # xticks
+        scale_x_continuous(breaks=c(-0.4,-0.2,0.0,0.2,0.4,0.6,0.8,1.0)) +
+
+        theme_light() +
+
+        # legend within plot
+        # The coordinates for legend.position are x- and y- offsets from the bottom-left of the plot, ranging from 0 - 1.
+        theme(strip.text.x = element_blank(),
+              #strip.background = element_rect(colour="black", fill="grey"),
+              legend.background = element_rect(colour="black", fill="white"),
+              legend.position=c(0.12,0.05),
+              legend.title = element_blank(), # remove legend title
+        ) +
+        lims(y = c(min(0.485,tr_min_y_value_split), tr_max_y_value_split))
+
+    },
+    pattern = map(tr_results_split, labels_split, tr_se_split),
+    iteration = "list",
+    description = "timeresolved results plot"
+  ),
+
+  tar_target(
+    name = tr_plot_split,
+    command = {
+      ggarrange(plotlist = tr_plots_split,
+                labels = c("A", "B", "C", "D", "E", "F"),
+                ncol = 2, nrow = 3
+                #common.legend = TRUE,
+                #legend.grob = get_legend(tr_plots[[1]])
+      )
+
+    },
+    description = "merged timeresolved results plots"
+  ),
+
+  tar_target(
+    name = tr_plot_save_split,
+    command = ggsave(tr_plot_split, filename = "../plots/tr_plot_split.png", 
+                     width = 18, height = 20, units = "cm", dpi = 300, scale=1.2,
+                     bg="white"),
+    description = "save timeresolved results plot"
+  ),
+  
+  
+  #### EEGNET results
+  
+  tar_target(
+    name = en_file_split,
+    command = "../models/eegnet_single.csv",
+    format = "file",
+    description = "eegnet accuracies raw data file" # requires development targets >= 1.5.0.9001: remotes::install_github("ropensci/targets")
+  ),
+  
+  tar_target(
+    name = en_data_split,
+    command = {
+      read_csv(en_file_split) %>%
+        # rename R1: new order because now also split
+        mutate(participant = str_extract(session, "sub-\\d+")) %>%
+        mutate(session = str_extract(session, "ses-\\d+")) %>%
+        group_by(context, session) %>%  # Group by the 'subset' column
+        mutate(p_fdr = p.adjust(p_uncorrected, method = "BH")) %>%  # Apply BH correction 
+        ungroup() %>%  # Ungroup to finish
+        mutate(significance = ifelse(p_fdr < 0.05, "p < 0.05 (FDR)", "n.s."))
+      
+    },
+    description = "eegnet accuracies data"
+  ),
+
+  # ALTERNATIVE, like in TR
+  # # manual group by
+  # tar_target(name = tr_data_inter_single, command = tr_data_single %>% subset(species=="inter") %>% select(-c(species))),
+  # tar_target(name = tr_data_intra_human_single, command = tr_data_single %>% subset(species=="intra_human") %>% select(-c(species))),
+  # tar_target(name = tr_data_intra_monkey_single, command = tr_data_single %>% subset(species=="intra_monkey") %>% select(-c(species))),
+  # tar_target(name = tr_data_con_single, 
+  #            command = list(tr_data_inter_single, tr_data_intra_human_single, tr_data_intra_monkey_single),
+  #            iteration = "list"),
+  # 
+  # # Split each species-specific dataset by session
+  # tar_target(
+  #   name = tr_data_con_split_pre,
+  #   command = {
+  #     split_sessions(tr_data_con_single) #, unlist(xx, recursive=FALSE)
+  #   },
+  #   pattern = map(tr_data_con_single),
+  #   iteration = "list"
+  # ),
+  # 
+  # # split the 2 lists per branch into one large list
+  # tar_target(
+  #   name = tr_data_con_split,
+  #   command = {
+  #     # unlist(tr_data_con_split_pre, recursive=FALSE)
+  #     tr_data_con_split_pre %>% purrr::reduce(c)
+  #   },
+  #   iteration = "list"
+  # ),  
+  
+  
+  tar_group_by(
+    en_data_con_split,
+    en_data_split,
+    context,
+    session, # R1: another split by session
+    description = "eegnet accuracies data grouped"
+  ),
+  
+  # maximal y value for plotting
+  tar_target(en_max_y_value_split, max(max(en_data_split$accuracy), max(en_data_split$ul))),
+  tar_target(en_min_y_value_split, min(min(en_data_split$accuracy), min(en_data_split$ll))),
+  
+  # barplots of accuracies across sessions, black for some with p>0.05, darkred for p<0.05
+  tar_target(
+    name = en_plots_split,
+    command = {
+      p <- ggplot(data = en_data_con_split,
+                  aes(x = participant, y = accuracy, color = significance)) + 
+        geom_crossbar(aes(ymin = ll, ymax = ul),
+                      color="grey", #rkcolors[2],
+                      width = 0.0, #0.2, 0 because this is an additional bar that is added to the lollipop  # Adjust width to change the thickness of the bar
+                      size = 1.5) + # Adjust thickness with size, this is the large bar
+        # lollypop
+        geom_point(size = 2) +
+        scale_color_manual(values = c("black", rkcolors[3])) +
+        geom_segment(aes(x=participant,
+                         xend=participant,
+                         y=0.5,
+                         yend=accuracy)) +
+  
+        labs(x = "Participant", y = "Accuracy", title = labels_split) +
+        lims(y = c(en_min_y_value_split, en_max_y_value_split)) +
+  
+        theme_light() +
+  
+        theme(#strip.text.x = element_blank(),
+          legend.background = element_rect(colour="black", fill="white"),
+          #strip.background = element_rect(colour="white", fill="white"),
+          legend.position=c(0.6,0.10),
+          legend.title = element_blank(), # remove legend title
+          axis.text.x = element_blank()
+          #element_text(angle = 90, size=8, vjust = 0)
+        )
+      if (labels_split != "Face categorization"){
+        p <- p + guides(color = "none")
+      }
+      p
+    },
+    pattern = map(en_data_con_split, labels_split),
+    iteration = "list",
+    description = "eegnet accuracies plot"
+  ),
+  
+  tar_target(
+    name = en_plot_split,
+    command = {
+      ggarrange(plotlist = en_plots_split,
+                labels = c("A", "B", "C", "D", "E", "F"),
+                ncol = 2, nrow = 3 # R1
+                #common.legend = TRUE,
+                #legend.grob = get_legend(tr_plots[[1]])
+      )
+    },
+    description = "merged EEGNet results plots"
+  ),
+  
+  tar_target(
+    name = en_plot_save_split,
+    command = ggsave(en_plot_split, filename = "../plots/en_plot_split.png",
+                     width = 18, height = 16, units = "cm", dpi = 300, scale=1.2,
+                     bg="white"),
+    description = "save EEGNet results plot"
+  ),
+  
+
+  tar_target(
+    name = en_stats_split,
+    command = {
+      en_data_split %>%
+        select(participant, context, session, accuracy) %>%
+        pivot_wider(
+          names_from = session,
+          values_from = accuracy
+        ) %>%
+        group_by(context) %>%
+        # paired t-test
+        summarise(
+          t_test = list(t.test(`ses-001`, `ses-002`, paired = TRUE)),
+        ) %>%
+        mutate(
+          tidy_result = lapply(t_test, broom::tidy)
+        ) %>%
+          unnest(tidy_result) %>%
+          mutate(
+            apa_report = sprintf("t(%d) = %.2f, p = %.3f", parameter, statistic, p.value)
+          ) %>%
+          select(context, apa_report)
+    },
+    description = "split sessions, paired ttest ses 1 vs 2"
+  ),
+  
+  tar_target(
+    name = en_plot_corr_split,
+    command = {
+      en_data_split %>%
+        select(participant, context, session, accuracy) %>%
+        pivot_wider(
+          names_from = session,
+          values_from = accuracy
+        ) %>%
+        ggplot(aes(x = `ses-001`, y = `ses-002`)) +
+        geom_point(size = 2) +
+        facet_grid(~context, labeller = as_labeller(c(
+          inter = "Face categorization",
+          intra_human = "Human face individuation",
+          intra_monkey = "Monkey face individuation"
+        ))) +
+        # x=y line
+        geom_abline(slope = 1, intercept = 0, color = "black", linetype = "dashed") +
+        # square facets
+        coord_fixed() +
+        labs(
+          x = "Accuracy: 5-8 months",
+          y = "Accuracy: 9-11 months"
+        ) +
+        # Add APA report text
+        geom_text(
+          data = en_stats_split,
+          aes(x = 0.4, y = 0.8, label = apa_report),  # Adjust x/y to fit your plot range
+          inherit.aes = FALSE,
+          size = 3.5,
+          hjust = 0
+        ) +
+        theme_bw()
+    },
+    description = "split sessions, correlation ses 1 vs 2"
+  ),
+  
+  tar_target(
+    name = en_plot_corr_save_split,
+    command = ggsave(en_plot_corr_split, filename = "../plots/en_plot_scatter_split.png", 
+                     width = 18, height = 10, units = "cm", dpi = 300, scale=1.2,
+                     bg="white"),
+    description = "save eegnet scatter results plot"
+  ),
+  
+  ####################
+  # R1 adult pilots
+  ####################
+  
+  tar_target(
+    name = tr_file_adults,
+    command = "../models/timeresolved_adults.csv",
+    format = "file",
+    description = "timeresolved timeseries data file" 
+  ),
+  
+  # tr
+  tar_target(
+    name = tr_data_adults,
+    command = {read.csv(tr_file_adults) %>%
+        rename(participant = session) %>%
+        rename(context = species) %>%
+        select(-c(subset, surrogate))
+      },
+    description = "timeresolved timeseries data" 
+  ),
+  
+  tar_group_by(
+    tr_data_adults_grouped,
+    tr_data_adults,
+    context,
+    participant, # R1: another split by session
+    description = "timeresolved accuracies data grouped"
+  ),
+  # maximal y value for plotting
+  tar_target(tr_max_y_value_adults, max(tr_data_adults$accuracy)),
+  tar_target(tr_min_y_value_adults, min(tr_data_adults$accuracy)),
+  # labels for plots
+  tar_target(labels_adults,
+             list("Face categorization: adult 1","Face categorization: adult 2",
+                  "Human face individuation: adult 1","Human face individuation: adult 2",
+                  "Monkey face individuation: adult 1","Monkey face individuation: adult 2"),
+             iteration = "list"),  
+  
+  # plot
+  tar_target(
+    name = tr_plots_adults,
+    command = {
+      offset = 0.5
+      
+      p <- ggplot(data = tr_data_adults_grouped, aes(x = times, y = accuracy)) +
+        
+        geom_line(color = "black") +  # Line plot for times vs accuracy
+        
+        # Points for pmass < 0.05
+        geom_point(aes(y = -0.02 + offset, color = "Cluster: p < 0.05 (FWER)"),
+                   #data = tr_data_adults_grouped[significant=="True"],
+                   data = dplyr::filter(tr_data_adults_grouped, significant == "True"),
+                   size = 1) +
+
+        scale_color_manual(values = c("Cluster: p < 0.05 (FWER)" = rkcolors[1], ##7570b3
+                                      "Time point: p < 0.05 (FWER)" = rkcolors[3])
+                                      ) +  # #1b9e77
+        
+        #theme_minimal() +
+        labs(x = "Time (s)", y = "Accuracy", title = labels_adults) + #, color = ""
+        #labs(x = "Time | s", y = "Accuracy", title = "Time-resolved Accuracy (Human vs. Monkey)", color = "Significant Decoding") +
+        
+        geom_vline(xintercept = 0, linetype="dashed", color="black") +
+        geom_hline(yintercept = 0 + offset, linetype="dashed", color="black") +
+        
+        # xticks
+        scale_x_continuous(breaks=c(-0.4,-0.2,0.0,0.2,0.4,0.6,0.8,1.0)) +
+        
+        theme_light() +
+        
+        # legend within plot
+        # The coordinates for legend.position are x- and y- offsets from the bottom-left of the plot, ranging from 0 - 1.
+        theme(strip.text.x = element_blank(),
+              #strip.background = element_rect(colour="black", fill="grey"),
+              legend.background = element_rect(colour="black", fill="white"),
+              legend.position=c(0.15,0.1),
+              legend.title = element_blank(), # remove legend title
+        ) +
+        lims(y = c(min(0.485,tr_min_y_value_adults), tr_max_y_value_adults))
+      
+      if (labels_adults != "Face categorization: adult 2"){
+        p <- p + guides(color = "none")
+      } 
+      p
+      
+    },
+    pattern = map(tr_data_adults_grouped, labels_adults),
+    iteration = "list",
+    description = "timeresolved results plot"
+  ),
+  
+  tar_target(
+    name = tr_plot_adults,
+    command = {
+      ggarrange(plotlist = tr_plots_adults,
+                labels = c("A", "B", "C", "D", "E", "F"),
+                ncol = 2, nrow = 3
+                #common.legend = TRUE,
+                #legend.grob = get_legend(tr_plots[[1]])
+      )
+    },
+    description = "merged timeresolved results plots"
+  ),
+  
+  tar_target(
+    name = tr_plot_save_adults,
+    command = ggsave(tr_plot_adults, filename = "../plots/tr_plot_adults.png", 
+                     width = 18, height = 20, units = "cm", dpi = 300, scale=1.2,
+                     bg="white"),
+    description = "save timeresolved results plot"
+  ),
+  
+  # EN
+  
+  
+  
+  tar_target(
+    name = en_file_adults,
+    command = "../models/eegnet_adults.csv",
+    format = "file",
+    description = "eegnet accuracies raw data file" # requires development targets >= 1.5.0.9001: remotes::install_github("ropensci/targets")
+  ),
+  
+  tar_target(
+    name = en_data_adults,
+    command = {
+      read_csv(en_file_adults) %>%
+        # rename session to participant
+        rename(participant = session) %>%
+        group_by(context) %>%  # Group by the 'subset' column
+        mutate(p_fdr = p.adjust(p_uncorrected, method = "BH")) %>%  # Apply BH correction
+        ungroup() %>%  # Ungroup to finish
+        mutate(significance = ifelse(p_fdr < 0.05, "p < 0.05 (FDR)", "n.s."))
+      
+    },
+    description = "eegnet accuracies data"
+  ),
+  
+  tar_group_by(
+    en_data_con_adults,
+    en_data_adults,
+    context,
+    description = "eegnet accuracies data grouped"
+  ),
+  
+  # maximal y value for plotting
+  tar_target(en_max_y_value_adults, max(max(en_data_adults$accuracy), max(en_data_adults$ul))),
+  tar_target(en_min_y_value_adults, min(min(en_data_adults$accuracy), min(en_data_adults$ll))),
+  
+  # barplots of accuracies across sessions, black for some with p>0.05, darkred for p<0.05
+  tar_target(
+    name = en_plots_adults,
+    command = {
+      p <- ggplot(data = en_data_con_adults, 
+                  aes(x = participant, y = accuracy, color = significance)) + #p_fdr < 0.05
+        #geom_bar(stat = "identity") +
+        #scale_fill_manual(values = c("black", "darkred")) +
+        
+        # Add error bar-like things for the underlying permutation distribution (from ll to ul)
+        #geom_errorbar(aes(ymin = ll, ymax = ul), width = 0.5, color = rkcolors[2]) +
+        geom_crossbar(aes(ymin = ll, ymax = ul),
+                      color="grey", #rkcolors[2],
+                      width = 0.0, #0.2, 0 because this is an additional bar that is added to the lollipop  # Adjust width to change the thickness of the bar
+                      size = 1.5) + # Adjust thickness with size, this is the large bar
+        
+        
+        
+        # lollypop
+        geom_point(size = 2) +
+        #scale_color_manual(values = c("black", rkcolors[3])) +
+        scale_color_manual(values = c(
+          "n.s." = "black",
+          "p < 0.05 (FDR)" = rkcolors[3]
+          )) + # R1 set value explicitly
+        geom_segment(aes(x=participant, 
+                         xend=participant, 
+                         y=0.5, 
+                         yend=accuracy)) + 
+        
+        
+        labs(x = "Participant", y = "Accuracy", title = labels) +
+        lims(y = c(en_min_y_value_adults, en_max_y_value_adults)) +
+        
+        
+        theme_light() +
+        
+        theme(#strip.text.x = element_blank(),
+          legend.background = element_rect(colour="black", fill="white"),
+          #strip.background = element_rect(colour="white", fill="white"),
+          legend.position=c(0.5,0.80),
+          legend.title = element_blank(), # remove legend title
+          axis.text.x = element_blank()
+          #element_text(angle = 90, size=8, vjust = 0)
+        )
+      if (labels != "Monkey face individuation"){
+        p <- p + guides(color = "none")
+      } 
+      p
+    },
+    pattern = map(en_data_con_adults, labels),
+    iteration = "list",
+    description = "eegnet accuracies plot"
+  ),
+  
+  tar_target(
+    name = en_plot_adults,
+    command = {
+      ggarrange(plotlist = en_plots_adults, 
+                labels = c("A", "B", "C"),
+                ncol = 3, nrow = 1
+                #common.legend = TRUE,
+                #legend.grob = get_legend(tr_plots[[1]])
+      )
+    },
+    description = "merged EEGNet results plots"
+  ),
+  
+  tar_target(
+    name = en_plot_save_adults,
+    command = ggsave(en_plot_adults, filename = "../plots/en_plot_adults.png", 
+                     width = 18, height = 8, units = "cm", dpi = 300, scale=1.2,
+                     bg="white"),
+    description = "save EEGNet results plot"
+  ),
+
+  
+  
+  
+  
+  # R1 sort EN participants by age in plot
+
+  tar_target(en_data_con_sorted, # sort participants by average age across sessions
+             {
+               # sort participants by age
+               sorted_by_age <- demo_data %>%
+                 arrange(age) %>%
+                 pull(sub)
+               
+               en_data_con %>%
+                 left_join(demo_data %>% rename(participant = sub), 
+                           by = "participant") %>% # sort participants factor by age
+                 mutate(participant = factor(participant, levels = sorted_by_age)) %>%
+                 arrange(participant) %>%
+                 mutate(participant_age = paste0(participant, " (", age, " mo.)"))
+                 
+             },
+             pattern = map(en_data_con),
+             iteration = "list",
+             description = "sort EN participants by age"
+  ),
+  
+  tar_target(
+    name = en_plots_sorted,
+    command = {
+      p <- ggplot(data = en_data_con_sorted, 
+                  aes(x = participant, y = accuracy, color = significance)) + # R1
+        # Add error bar-like things for the underlying permutation distribution (from ll to ul)
+        geom_crossbar(aes(ymin = ll, ymax = ul),
+                      color="grey", #rkcolors[2],
+                      width = 0.0, #0.2, 0 because this is an additional bar that is added to the lollipop  # Adjust width to change the thickness of the bar
+                      size = 1.5) + # Adjust thickness with size, this is the large bar
+        
+        # lollypop
+        geom_point(size = 2) +
+        scale_color_manual(values = c("black", rkcolors[3])) +
+        geom_segment(aes(x=participant, 
+                         xend=participant, 
+                         y=0.5, 
+                         yend=accuracy)) + 
+        # R1: add age
+        #scale_x_discrete(labels = levels(en_data_con_sorted$participant)) +
+        
+        labs(x = "", y = "Accuracy", title = labels) +
+        lims(y = c(en_min_y_value, en_max_y_value)) +
+        theme_light() +
+        theme(#strip.text.x = element_blank(),
+          legend.background = element_rect(colour="black", fill="white"),
+          legend.position=c(0.6,0.10),
+          legend.title = element_blank(), # remove legend title
+          axis.text.x = element_blank() # R1
+          #axis.text.x = element_text(angle = 270, vjust = 0, hjust = 0)
+        )
+      if (labels != "Face categorization"){
+        p <- p + guides(color = "none")
+      } 
+      p
+    },
+    pattern = map(en_data_con_sorted, labels),
+    iteration = "list",
+    description = "eegnet accuracies plot"
+  ),
+  
+  # additional age lineplots
+  tar_target(
+    name = en_plots_sorted_age,
+    command = {
+      p <- ggplot(data = en_data_con_sorted, 
+                  aes(x = participant, y = age, group = 1)) + # R1
+        geom_line(size = 1) +
+        labs(x = "Participant", y = "Age (months)") + #, title = labels
+        #lims(y = c(en_min_y_value, en_max_y_value)) +
+        theme_light() +
+        theme(strip.text.x = element_blank(),
+        #  legend.background = element_rect(colour="black", fill="white"),
+        #  legend.position=c(0.6,0.10),
+        #  legend.title = element_blank(), # remove legend title
+          axis.text.x = element_blank() # R1
+        #  axis.text.x = element_text(angle = 270, vjust = 0, hjust = 0)
+        )
+      p
+    },
+    pattern = map(en_data_con_sorted),
+    iteration = "list",
+    description = "eegnet accuracies plot"
+  ),
+
+  tar_target(
+    name = en_plot_sorted,
+    command = {
+      ggarrange(plotlist = en_plots_sorted, 
+                labels = c("A", "B", "C"),
+                ncol = 3, nrow = 1
+      )
+    },
+    description = "merged EEGNet results plots"
+  ),
+  
+  tar_target(
+    name = en_plot_sorted_age,
+    command = {
+      ggarrange(plotlist = en_plots_sorted_age, 
+                #labels = c("", "", ""),
+                ncol = 3, nrow = 1
+      )
+    },
+    description = "merged EEGNet results age plots"
+  ),
+  
+  tar_target(name = en_plot_sorted_merge,
+             command = {
+               ggarrange(plotlist = list(en_plot_sorted, en_plot_sorted_age), 
+                         ncol = 1, nrow = 2,
+                         heights = c(0.8, 0.2)  # First plot takes 80%, second plot takes 20%
+               )
+    },             
+             
+  ),
+  
+  tar_target(
+    name = en_plot_save_sorted,
+    command = ggsave(en_plot_sorted_merge, filename = "../plots/en_plot_sorted.png", 
+                     width = 18, height = 10, units = "cm", dpi = 300, scale=1.2,
+                     bg="white"),
+    description = "save EEGNet results plot"
+  )
+
+
+
+  
+  
+
   
 )
